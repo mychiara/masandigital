@@ -54,6 +54,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
   const [commentText, setCommentText] = useState('');
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   // Scroll Progress Bar Tracker
   useEffect(() => {
@@ -68,7 +69,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Increment views & load comments on mount
+  // Increment views & load comments & fetch related articles on mount
   useEffect(() => {
     setLikes(Math.floor(initialArticle.views / 20) + 5); // Seed likes based on views
     
@@ -94,6 +95,17 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     // Increment views in DB / local storage
     db.incrementViews(initialArticle.id).then(newViews => {
       setArticle(prev => ({ ...prev, views: newViews }));
+    });
+
+    // Fetch related articles from the same category
+    db.getArticles(initialArticle.category).then(data => {
+      const now = new Date();
+      const published = data.filter(
+        a => a.status === 'published' && 
+             a.id !== initialArticle.id && 
+             new Date(a.published_at || a.created_at) <= now
+      );
+      setRelatedArticles(published.slice(0, 5));
     });
   }, [initialArticle]);
 
@@ -382,6 +394,42 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
 
                     return <p key={idx}>{paragraph}</p>;
                   })}
+                </div>
+              )}
+
+              {/* Baca Juga - Related Articles from Same Category */}
+              {relatedArticles.length > 0 && (
+                <div className="mt-12 p-6 md:p-8 bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-3xl shadow-lg">
+                  <h3 className="text-base md:text-lg font-black text-on-surface tracking-tight mb-5 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                    Baca Juga
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/15 ml-1">
+                      {article.category}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {relatedArticles.map((related) => (
+                      <Link
+                        key={related.id}
+                        href={`/article/${related.slug}`}
+                        className="group flex items-start gap-3 p-3.5 rounded-2xl bg-surface-container-lowest/60 border border-outline-variant/15 hover:border-primary/30 hover:bg-surface-container-high/50 transition-all duration-300"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                          <ChevronRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                            {related.title}
+                          </p>
+                          <p className="text-[11px] text-on-surface-variant mt-1 flex items-center gap-2">
+                            <span>{new Date(related.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            <span>•</span>
+                            <span>{related.reading_time} min read</span>
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
 

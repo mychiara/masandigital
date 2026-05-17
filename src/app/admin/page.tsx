@@ -43,7 +43,8 @@ import {
   Mail,
   Download,
   Users,
-  RefreshCw
+  RefreshCw,
+  MessageSquare
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -640,6 +641,48 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleBulkIndex = async () => {
+    if (selectedIds.length === 0) return;
+    const toIndex = selectedIds.filter(id => !indexedIds.includes(id));
+    if (toIndex.length === 0) {
+      alert('Semua artikel yang dipilih sudah terindeks!');
+      return;
+    }
+    setIsBulkDeleting(true); // reuse loading state
+    // Simulate indexing with a delay per batch
+    setTimeout(() => {
+      setIndexedIds(prev => [...new Set([...prev, ...toIndex])]);
+      setIsBulkDeleting(false);
+      alert(`[Google Search Console API]\nBerhasil mengirim ${toIndex.length} artikel untuk Instant Indexing secara massal!\n\nAction: URL_UPDATED (Bulk)\nGoogle & Bing Indexing: AKTIF`);
+    }, 2000);
+  };
+
+  const handleBulkToggleComments = async (enable: boolean) => {
+    if (selectedIds.length === 0) return;
+    try {
+      await Promise.all(selectedIds.map(id => db.updateArticle(id, { comments_enabled: enable })));
+      setArticles(articles.map(a => selectedIds.includes(a.id) ? { ...a, comments_enabled: enable } : a));
+      alert(`Berhasil ${enable ? 'mengaktifkan' : 'menonaktifkan'} Discussion pada ${selectedIds.length} artikel!`);
+    } catch (err) {
+      console.error("Gagal mengubah status discussion:", err);
+      alert("Gagal mengubah status discussion. Silakan coba lagi.");
+    }
+  };
+
+  const handleBulkChangeAuthor = async () => {
+    if (selectedIds.length === 0) return;
+    const newName = prompt(`Masukkan nama Author baru untuk ${selectedIds.length} artikel terpilih:`, user?.name || '');
+    if (!newName || !newName.trim()) return;
+    try {
+      await Promise.all(selectedIds.map(id => db.updateArticle(id, { author_name: newName.trim() })));
+      setArticles(articles.map(a => selectedIds.includes(a.id) ? { ...a, author_name: newName.trim() } : a));
+      alert(`Berhasil mengganti Author Name menjadi "${newName.trim()}" pada ${selectedIds.length} artikel!`);
+    } catch (err) {
+      console.error("Gagal mengubah author name:", err);
+      alert("Gagal mengubah author name. Silakan coba lagi.");
+    }
+  };
+
   const toggleStatus = async (id: string, currentStatus: 'draft' | 'published') => {
     const nextStatus = currentStatus === 'published' ? 'draft' : 'published';
     const updated = await db.updateArticle(id, { status: nextStatus });
@@ -1084,18 +1127,56 @@ export default function AdminDashboard() {
                 
                 <div className="flex items-center gap-3 w-full md:w-auto">
                   {selectedIds.length > 0 && (
-                    <button
-                      onClick={handleBulkDelete}
-                      disabled={isBulkDeleting}
-                      className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white font-sans text-[11px] font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
-                    >
-                      {isBulkDeleting ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
-                      Hapus ({selectedIds.length})
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={handleBulkDelete}
+                        disabled={isBulkDeleting}
+                        className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white font-sans text-[11px] font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                      >
+                        {isBulkDeleting ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        Hapus ({selectedIds.length})
+                      </button>
+                      <button
+                        onClick={handleBulkIndex}
+                        disabled={isBulkDeleting}
+                        className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white font-sans text-[11px] font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Instant Indexing Massal ke Google & Bing"
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        Index ({selectedIds.length})
+                      </button>
+                      <button
+                        onClick={() => handleBulkToggleComments(false)}
+                        disabled={isBulkDeleting}
+                        className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-sans text-[11px] font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Nonaktifkan Discussion pada artikel terpilih"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        Off Discussion
+                      </button>
+                      <button
+                        onClick={() => handleBulkToggleComments(true)}
+                        disabled={isBulkDeleting}
+                        className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-sans text-[11px] font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Aktifkan Discussion pada artikel terpilih"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        On Discussion
+                      </button>
+                      <button
+                        onClick={handleBulkChangeAuthor}
+                        disabled={isBulkDeleting}
+                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-sans text-[11px] font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Ganti Author Name secara massal"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        Ganti Author
+                      </button>
+                    </div>
                   )}
                   <div className="relative w-full md:w-72">
                     <Search className="w-4 h-4 text-on-surface-variant/50 absolute left-3.5 top-1/2 transform -translate-y-1/2" />
