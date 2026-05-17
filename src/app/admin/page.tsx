@@ -52,6 +52,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchVal, setSearchVal] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'analytics' | 'newsletter' | 'settings' | 'ai-generator'>('content');
   const [activeSettingsGroup, setActiveSettingsGroup] = useState<'identity' | 'monetization' | 'tracking' | 'pages' | 'categories' | 'indexing' | 'backup' | 'profile'>('identity');
   const [profileName, setProfileName] = useState('');
@@ -555,8 +557,45 @@ export default function AdminDashboard() {
       const success = await db.deleteArticle(id);
       if (success) {
         setArticles(articles.filter(a => a.id !== id));
+        setSelectedIds(prev => prev.filter(x => x !== id));
       }
       setIsDeleting(null);
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAllVisible = () => {
+    const visibleIds = filteredArticles.map(a => a.id);
+    if (visibleIds.length === 0) return;
+    
+    const allVisibleSelected = visibleIds.every(id => selectedIds.includes(id));
+    if (allVisibleSelected) {
+      setSelectedIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    } else {
+      setSelectedIds(prev => [...new Set([...prev, ...visibleIds])]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (confirm(`Apakah Anda yakin ingin menghapus secara massal ${selectedIds.length} artikel terpilih? Tindakan ini tidak dapat dibatalkan.`)) {
+      setIsBulkDeleting(true);
+      try {
+        await Promise.all(selectedIds.map(id => db.deleteArticle(id)));
+        setArticles(articles.filter(a => !selectedIds.includes(a.id)));
+        setSelectedIds([]);
+        alert(`Sukses menghapus ${selectedIds.length} artikel secara massal!`);
+      } catch (err) {
+        console.error("Gagal menghapus beberapa artikel:", err);
+        alert("Gagal menghapus beberapa artikel. Silakan coba lagi.");
+      } finally {
+        setIsBulkDeleting(false);
+      }
     }
   };
 
@@ -906,15 +945,31 @@ export default function AdminDashboard() {
                   Manage Content
                 </h3>
                 
-                <div className="relative w-full md:w-72">
-                  <Search className="w-4 h-4 text-on-surface-variant/50 absolute left-3.5 top-1/2 transform -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Filter by title or tag..."
-                    value={searchVal}
-                    onChange={(e) => setSearchVal(e.target.value)}
-                    className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-2.5 pl-10 pr-4 text-xs text-on-surface focus:outline-none transition-colors"
-                  />
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  {selectedIds.length > 0 && (
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                      className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white font-sans text-[11px] font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                    >
+                      {isBulkDeleting ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                      Hapus ({selectedIds.length})
+                    </button>
+                  )}
+                  <div className="relative w-full md:w-72">
+                    <Search className="w-4 h-4 text-on-surface-variant/50 absolute left-3.5 top-1/2 transform -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Filter by title or tag..."
+                      value={searchVal}
+                      onChange={(e) => setSearchVal(e.target.value)}
+                      className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-2.5 pl-10 pr-4 text-xs text-on-surface focus:outline-none transition-colors"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -936,6 +991,15 @@ export default function AdminDashboard() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-outline-variant/15 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                        <th className="pb-3 pr-2 w-10">
+                          <input
+                            type="checkbox"
+                            checked={filteredArticles.length > 0 && filteredArticles.every(a => selectedIds.includes(a.id))}
+                            onChange={handleToggleSelectAllVisible}
+                            className="rounded border-outline-variant/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer transition-all"
+                            title="Pilih Semua"
+                          />
+                        </th>
                         <th className="pb-3 pr-4">Title</th>
                         <th className="pb-3 px-4">Tag</th>
                         <th className="pb-3 px-4">Status</th>
@@ -947,9 +1011,18 @@ export default function AdminDashboard() {
                       {filteredArticles.map((article) => {
                         const pubDate = new Date(article.published_at || article.created_at);
                         const isFuture = pubDate > new Date();
+                        const isSelected = selectedIds.includes(article.id);
                         
                         return (
-                          <tr key={article.id} className="hover:bg-surface-container-low/30 transition-colors">
+                          <tr key={article.id} className={`transition-colors ${isSelected ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-surface-container-low/30'}`}>
+                            <td className="py-4 pr-2 w-10">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelect(article.id)}
+                                className="rounded border-outline-variant/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer transition-all"
+                              />
+                            </td>
                             <td className="py-4 pr-4 max-w-xs md:max-w-md">
                               <Link href={`/article/${article.slug}`} className="font-bold text-on-surface hover:text-primary transition-colors block truncate">
                                 {article.title}
