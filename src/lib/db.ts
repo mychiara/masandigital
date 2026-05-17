@@ -85,8 +85,12 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Detect if Supabase is properly configured
-const isSupabaseConfigured = SUPABASE_URL.trim() !== '' && SUPABASE_ANON_KEY.trim() !== '';
+// Detect if Supabase is properly configured (filters out placeholder keys)
+const isSupabaseConfigured = 
+  SUPABASE_URL.trim() !== '' && 
+  SUPABASE_ANON_KEY.trim() !== '' && 
+  !SUPABASE_ANON_KEY.includes('SILAKAN_PASTE') &&
+  !SUPABASE_ANON_KEY.includes('your_supabase');
 
 export const supabase = isSupabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -180,7 +184,7 @@ const saveLocalArticles = (articles: Article[]) => {
 const cache = {
   articles: null as { data: Article[]; timestamp: number } | null,
   articleBySlug: {} as Record<string, { data: Article | null; timestamp: number }>,
-  settings: null as { data: any; timestamp: number } | null,
+  settings: null as { data: SiteSettings; timestamp: number } | null,
   
   clear() {
     this.articles = null;
@@ -192,7 +196,7 @@ const cache = {
 // Active request coalescing registry (prevents parallel identical queries to Supabase)
 const pending = {
   articles: null as Promise<Article[] | null> | null,
-  settings: null as Promise<any> | null,
+  settings: null as Promise<SiteSettings | null> | null,
 };
 
 // Offline Circuit Breaker State (Prevents spamming offline Supabase server)
@@ -231,7 +235,8 @@ export const db = {
               }
               if (error) throw error;
             } catch (err) {
-              console.error('Supabase query failed, activating Offline Circuit Breaker:', err);
+              const errorMessage = err instanceof Error ? err.message : String(err);
+              console.error('Supabase query failed, activating Offline Circuit Breaker:', errorMessage);
               isSupabaseOffline = true;
               supabaseOfflineTimestamp = Date.now();
             }
@@ -335,8 +340,10 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { id, ...dbRow } = newArticle;
-        let { data, error } = await supabase
+        const dbRow: Partial<Article> = { ...newArticle };
+        delete dbRow.id;
+        
+        const { data, error } = await supabase
           .from('articles')
           .insert([dbRow])
           .select()
@@ -344,7 +351,10 @@ export const db = {
           
         if (error) {
           console.warn('First articles insert failed, retrying without keywords & comments_enabled columns:', error);
-          const { keywords, comments_enabled, ...fallbackRow } = dbRow;
+          const fallbackRow = { ...dbRow };
+          delete fallbackRow.keywords;
+          delete fallbackRow.comments_enabled;
+          
           const { data: fallbackData, error: retryError } = await supabase
             .from('articles')
             .insert([fallbackRow])
@@ -372,7 +382,7 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        let { data, error } = await supabase
+        const { data, error } = await supabase
           .from('articles')
           .update(articleData)
           .eq('id', id)
@@ -381,7 +391,10 @@ export const db = {
           
         if (error) {
           console.warn('First articles update failed, retrying without keywords & comments_enabled columns:', error);
-          const { keywords, comments_enabled, ...fallbackPayload } = articleData;
+          const fallbackPayload = { ...articleData };
+          delete fallbackPayload.keywords;
+          delete fallbackPayload.comments_enabled;
+          
           const { data: fallbackData, error: retryError } = await supabase
             .from('articles')
             .update(fallbackPayload)
@@ -503,7 +516,9 @@ export const db = {
                     if (parsed.homepage_limit !== undefined && parsed.homepage_limit !== null) {
                       localLimit = Number(parsed.homepage_limit);
                     }
-                  } catch (e) {}
+                  } catch {
+                    // Safe fallback
+                  }
                 }
               }
 
@@ -517,7 +532,8 @@ export const db = {
               } as SiteSettings;
             }
           } catch (err) {
-            console.warn('Supabase settings query failed, activating Offline Circuit Breaker:', err);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            console.warn('Supabase settings query failed, activating Offline Circuit Breaker:', errorMessage);
             isSupabaseOffline = true;
             supabaseOfflineTimestamp = Date.now();
           }
@@ -548,7 +564,7 @@ export const db = {
       }
     }
 
-    cache.settings = { data: settings, timestamp: nowTime };
+    cache.settings = { data: settings!, timestamp: nowTime };
     return settings!;
   },
 
@@ -569,7 +585,7 @@ export const db = {
       try {
         const { data: existing } = await supabase.from('settings').select('id').limit(1).maybeSingle();
         
-        const payload: any = {
+        const payload: Record<string, unknown> = {
           site_title: settings.site_title,
           site_tagline: settings.site_tagline,
           site_logo: settings.site_logo,
@@ -600,7 +616,16 @@ export const db = {
           
           if (error) {
             console.warn('First settings update failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
-            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, homepage_limit, ...fallbackPayload } = payload;
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.site_logo;
+            delete fallbackPayload.site_icon;
+            delete fallbackPayload.google_indexing_enabled;
+            delete fallbackPayload.google_indexing_json;
+            delete fallbackPayload.bing_api_key;
+            delete fallbackPayload.google_site_verification;
+            delete fallbackPayload.categories;
+            delete fallbackPayload.homepage_limit;
+            
             const { error: retryError } = await supabase.from('settings').update(fallbackPayload).eq('id', existing.id);
             if (!retryError) {
               isSupabaseOffline = false; // connection works!
@@ -615,7 +640,16 @@ export const db = {
           
           if (error) {
             console.warn('First settings insert failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
-            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, homepage_limit, ...fallbackPayload } = payload;
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.site_logo;
+            delete fallbackPayload.site_icon;
+            delete fallbackPayload.google_indexing_enabled;
+            delete fallbackPayload.google_indexing_json;
+            delete fallbackPayload.bing_api_key;
+            delete fallbackPayload.google_site_verification;
+            delete fallbackPayload.categories;
+            delete fallbackPayload.homepage_limit;
+            
             const { error: retryError } = await supabase.from('settings').insert([fallbackPayload]);
             if (!retryError) {
               isSupabaseOffline = false; // connection works!
@@ -627,7 +661,8 @@ export const db = {
           }
         }
       } catch (err) {
-        console.error('Supabase settings update failed, activating Offline Circuit Breaker:', err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('Supabase settings update failed, activating Offline Circuit Breaker:', errorMessage);
         isSupabaseOffline = true;
         supabaseOfflineTimestamp = Date.now();
       }

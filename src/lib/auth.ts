@@ -24,7 +24,7 @@ export const auth = {
     if (localSession) {
       try {
         return JSON.parse(localSession) as UserProfile;
-      } catch (e) {
+      } catch {
         return null;
       }
     }
@@ -66,7 +66,7 @@ export const auth = {
 
     // Accept custom sign-ups or credentials saved in local users list
     const storedUsers = localStorage.getItem('masandigital_users');
-    let usersList: any[] = storedUsers ? JSON.parse(storedUsers) : [];
+    const usersList: { name: string; email: string; password?: string; avatar?: string }[] = storedUsers ? JSON.parse(storedUsers) : [];
     
     const matchedUser = usersList.find(u => u.email === email && u.password === password);
     if (matchedUser) {
@@ -80,7 +80,7 @@ export const auth = {
       return profile;
     }
 
-    throw new Error('Invalid email or password. Use email "admin@masandigital.com" and password "admin123" to access the editor dashboard.');
+    throw new Error('Invalid email or password. Please try again.');
   },
 
   // Perform sign up
@@ -116,7 +116,7 @@ export const auth = {
 
     // Local Registry Fallback
     const storedUsers = localStorage.getItem('masandigital_users');
-    let usersList: any[] = storedUsers ? JSON.parse(storedUsers) : [];
+    const usersList: { name: string; email: string; password?: string; avatar?: string }[] = storedUsers ? JSON.parse(storedUsers) : [];
     
     if (usersList.some(u => u.email === email) || email === 'admin@masandigital.com') {
       throw new Error('User with this email already exists.');
