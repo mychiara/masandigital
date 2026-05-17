@@ -1,0 +1,261 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { auth, UserProfile } from '../lib/auth';
+import { db } from '../lib/db';
+import { LogOut, LayoutDashboard, LogIn, Menu, X, User, Sparkles } from 'lucide-react';
+
+interface NavbarProps {
+  activeCategory?: string;
+  onCategoryChange?: (category: string) => void;
+  onSearchChange?: (search: string) => void;
+}
+
+export default function Navbar({ activeCategory, onCategoryChange, onSearchChange }: NavbarProps) {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchVal, setSearchVal] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [siteTitle, setSiteTitle] = useState('masandigital.com');
+  const [siteLogo, setSiteLogo] = useState('');
+  const [categories, setCategories] = useState<string[]>(['All', 'AI', 'Dev', 'Strategy', 'Cloud', 'Hardware']);
+  const router = useRouter();
+
+  useEffect(() => {
+    setUser(auth.getCurrentUser());
+  }, []);
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const settings = await db.getSettings();
+        if (settings) {
+          if (settings.site_title) setSiteTitle(settings.site_title);
+          if (settings.site_logo) setSiteLogo(settings.site_logo);
+          if (settings.categories) {
+            const list = settings.categories.split(',').map(c => c.trim()).filter(Boolean);
+            if (list.length > 0) {
+              setCategories(['All', ...list]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to query dynamic categories inside Navbar:', err);
+      }
+    }
+    loadCategories();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('masandigital_settings_changed', loadCategories);
+      return () => window.removeEventListener('masandigital_settings_changed', loadCategories);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    auth.logout();
+    setUser(null);
+    router.refresh();
+  };
+
+  return (
+    <header className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 glassmorphism rounded-2xl shadow-xl shadow-black/30 transition-all duration-300">
+      <div className="px-6 lg:px-8 flex justify-between items-center h-24">
+        
+        {/* Brand Logo */}
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center">
+            {siteLogo ? (
+              <div className="relative h-10 w-52">
+                <Image
+                  src={siteLogo}
+                  alt={siteTitle}
+                  fill
+                  sizes="176px"
+                  className="object-contain object-left"
+                />
+              </div>
+            ) : (
+              <span className="font-extrabold text-2xl tracking-tighter brand-gradient-text hover:opacity-95 transition-opacity">
+                {siteTitle}
+              </span>
+            )}
+          </Link>
+ 
+          {/* Desktop Navigation */}
+          {onCategoryChange && (
+            <nav className="hidden md:flex gap-6 items-center">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => onCategoryChange(cat)}
+                  className={`font-bold text-xs uppercase tracking-wider transition-all duration-200 ease-in-out border-b-2 pb-1 cursor-pointer ${
+                    (activeCategory || 'All') === cat
+                      ? 'text-primary border-primary shadow-sm shadow-primary/10'
+                      : 'text-on-surface-variant/80 border-transparent hover:text-primary hover:border-primary/50'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </nav>
+          )}
+        </div>
+ 
+        {/* Search & Actions */}
+        <div className="flex items-center gap-4">
+          {onSearchChange && (
+            <div className="relative flex items-center">
+              {showSearch ? (
+                <input
+                  type="text"
+                  placeholder="Search articles..."
+                  value={searchVal}
+                  onChange={(e) => {
+                    setSearchVal(e.target.value);
+                    onSearchChange(e.target.value);
+                  }}
+                  className="bg-surface-container-low border border-outline-variant/30 text-on-surface px-4 py-1.5 rounded-full text-xs w-44 md:w-56 focus:outline-none focus:border-primary transition-all shadow-inner"
+                  autoFocus
+                />
+              ) : null}
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className="p-2 hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-primary transition-all cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
+          )}
+ 
+          {/* User Session Action Buttons */}
+          <div className="hidden md:flex items-center gap-3">
+            {user ? (
+              <>
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-primary via-secondary to-tertiary text-white hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg shadow-primary/20 transition-all duration-300"
+                >
+                  <Sparkles className="w-3.5 h-3.5 animate-spin-slow" />
+                  Create &amp; Generate Post
+                </Link>
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2.5 rounded-full font-bold text-xs transition-all border border-primary/20"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Editor Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 bg-surface-container-high hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-full font-bold text-xs text-on-surface-variant transition-all cursor-pointer border border-outline-variant/20"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 bg-gradient-to-r from-primary via-secondary to-tertiary text-white hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg shadow-primary/20 transition-all duration-300"
+              >
+                <Sparkles className="w-3.5 h-3.5 animate-spin-slow" />
+                Create &amp; Generate Post
+              </Link>
+            )}
+          </div>
+ 
+          {/* Mobile Menu Trigger */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="md:hidden p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all cursor-pointer"
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+ 
+      {/* Mobile Menu Dropdown */}
+      {isOpen && (
+        <div className="md:hidden absolute top-[6.5rem] left-0 w-full bg-surface-container border border-outline-variant/30 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          {onCategoryChange && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant/45">Categories</span>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      onCategoryChange(cat);
+                      setIsOpen(false);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all ${
+                      (activeCategory || 'All') === cat
+                        ? 'bg-primary text-white shadow-md shadow-primary/20'
+                        : 'bg-surface-container-high text-on-surface-variant hover:bg-primary hover:text-white'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+ 
+          <div className="border-t border-outline-variant/10 pt-4 flex flex-col gap-2">
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 mb-2 p-2 bg-surface-container-low rounded-xl border border-outline-variant/10">
+                  <img src={user.avatar} className="w-8 h-8 rounded-full object-cover" alt="" />
+                  <div>
+                    <p className="text-xs font-bold text-on-surface">{user.name}</p>
+                    <p className="text-[10px] text-on-surface-variant">{user.email}</p>
+                  </div>
+                </div>
+                <Link
+                  href="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary via-secondary to-tertiary text-white py-2.5 rounded-xl font-semibold text-sm shadow-md transition-all mb-2"
+                >
+                  <Sparkles className="w-4 h-4 animate-spin-slow" />
+                  Create &amp; Generate Post
+                </Link>
+                <Link
+                  href="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-primary/10 text-primary text-sm font-semibold transition-all"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Editor Dashboard
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-red-500/10 text-red-500 text-sm font-semibold text-left transition-all cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary via-secondary to-tertiary text-white py-2.5 rounded-xl font-semibold text-sm shadow-md transition-all"
+              >
+                <Sparkles className="w-4 h-4 animate-spin-slow" />
+                Create &amp; Generate Post
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
