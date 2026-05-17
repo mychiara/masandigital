@@ -44,13 +44,18 @@ export default function HomePage() {
 
   // Load all published articles for global category counts in the sidebar
   useEffect(() => {
-    async function loadAll() {
-      const data = await db.getArticles();
-      const now = new Date();
-      setAllArticles(data.filter(a => a.status === 'published' && new Date(a.published_at || a.created_at) <= now));
+    // Only fetch separately when a filter is active; otherwise reuse main articles list
+    if (activeCategory !== 'All' || searchQuery) {
+      async function loadAll() {
+        const data = await db.getArticles();
+        const now = new Date();
+        setAllArticles(data.filter(a => a.status === 'published' && new Date(a.published_at || a.created_at) <= now));
+      }
+      loadAll();
+    } else {
+      setAllArticles(articles);
     }
-    loadAll();
-  }, []);
+  }, [activeCategory, searchQuery, articles]);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,8 +192,8 @@ export default function HomePage() {
           {/* Header Ad Slot / Cosmic Brand Welcome Hero */}
           <div className="w-full p-8 md:p-12 rounded-3xl border border-primary/20 relative overflow-hidden group shadow-2xl bg-surface-container-low/40 backdrop-blur-md mb-12">
             {/* Cosmic Aurora Glowing Backgrounds */}
-            <div className="absolute -top-12 -right-12 w-64 h-64 bg-primary/20 rounded-full blur-3xl opacity-60 group-hover:scale-110 transition-transform duration-700"></div>
-            <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-secondary/15 rounded-full blur-3xl opacity-60 group-hover:scale-110 transition-transform duration-700"></div>
+            <div className="absolute -top-12 -right-12 w-64 h-64 bg-primary/20 rounded-full blur-3xl opacity-40 group-hover:scale-110 transition-transform duration-700"></div>
+            <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-secondary/15 rounded-full blur-3xl opacity-40 group-hover:scale-110 transition-transform duration-700"></div>
             
             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div className="space-y-3">
@@ -238,7 +243,7 @@ export default function HomePage() {
                           alt={featuredArticle.title}
                           fill
                           priority
-                          sizes="(max-w-768px) 100vw, 800px"
+                          sizes="(max-width: 768px) 100vw, 800px"
                           className="object-cover group-hover:scale-105 transition-transform duration-700"
                         />
                         <div className="absolute top-4 left-4 bg-primary/80 backdrop-blur-md text-white font-black text-[10px] tracking-widest px-4 py-1.5 rounded-full shadow-md uppercase z-10 border border-white/10">
@@ -318,7 +323,8 @@ export default function HomePage() {
                             src={article.cover_image}
                             alt={article.title}
                             fill
-                            sizes="(max-w-768px) 100vw, 400px"
+                            loading="lazy"
+                            sizes="(max-width: 768px) 100vw, 400px"
                             className="object-cover group-hover:scale-105 transition-transform duration-700"
                           />
                           <span className="absolute top-3 left-3 bg-secondary/80 backdrop-blur-md text-white font-black text-[9px] tracking-widest px-3 py-1 rounded-full uppercase shadow-md z-10 border border-white/10">
@@ -360,6 +366,7 @@ export default function HomePage() {
                                   src={article.author_avatar}
                                   alt={article.author_name}
                                   fill
+                                  loading="lazy"
                                   sizes="28px"
                                   className="object-cover"
                                 />
