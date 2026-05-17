@@ -53,13 +53,13 @@ export default function Footer() {
             The authoritative source for high-end technology strategy, innovative engineering, and the digital future.
           </p>
           <div className="flex gap-4">
-            <a href="#" className="text-white hover:bg-white/20 p-2 bg-white/10 rounded-full transition-all">
+            <a href="#" aria-label="Website Link" className="text-white hover:bg-white/20 p-2 bg-white/10 rounded-full transition-all">
               <Globe className="w-4 h-4" />
             </a>
-            <a href="#" className="text-white hover:bg-white/20 p-2 bg-white/10 rounded-full transition-all">
+            <a href="#" aria-label="Social Share" className="text-white hover:bg-white/20 p-2 bg-white/10 rounded-full transition-all">
               <Share2 className="w-4 h-4" />
             </a>
-            <a href="#" className="text-white hover:bg-white/20 p-2 bg-white/10 rounded-full transition-all">
+            <a href="#" aria-label="RSS Feed" className="text-white hover:bg-white/20 p-2 bg-white/10 rounded-full transition-all">
               <Rss className="w-4 h-4" />
             </a>
           </div>

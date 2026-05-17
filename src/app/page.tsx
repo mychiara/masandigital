@@ -564,6 +564,7 @@ export default function HomePage() {
                         value={emailInput}
                         onChange={(e) => setEmailInput(e.target.value)}
                         placeholder="Your email address"
+                        aria-label="Email address for newsletter"
                         className="w-full bg-background border border-outline-variant/30 rounded-xl py-3 px-4 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors shadow-inner"
                       />
                       <button

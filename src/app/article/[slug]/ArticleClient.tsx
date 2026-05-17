@@ -433,6 +433,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                         required
                         placeholder="Your name"
                         value={commentName}
+                        aria-label="Your name for comment"
                         onChange={(e) => setCommentName(e.target.value)}
                         className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none transition-colors shadow-inner"
                       />
@@ -441,6 +442,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                         rows={3}
                         placeholder="Add to the conversation..."
                         value={commentText}
+                        aria-label="Comment content"
                         onChange={(e) => setCommentText(e.target.value)}
                         className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none transition-colors shadow-inner"
                       />

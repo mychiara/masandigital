@@ -113,6 +113,7 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
                   type="text"
                   placeholder="Search articles..."
                   value={searchVal}
+                  aria-label="Search articles"
                   onChange={(e) => {
                     setSearchVal(e.target.value);
                     onSearchChange(e.target.value);
@@ -123,6 +124,7 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
               ) : null}
               <button
                 onClick={() => setShowSearch(!showSearch)}
+                aria-label="Toggle search field"
                 className="p-2 hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-primary transition-all cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -172,6 +174,7 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
           {/* Mobile Menu Trigger */}
           <button
             onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle navigation menu"
             className="md:hidden p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all cursor-pointer"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -210,7 +213,7 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
             {user ? (
               <>
                 <div className="flex items-center gap-2 mb-2 p-2 bg-surface-container-low rounded-xl border border-outline-variant/10">
-                  <img src={user.avatar} className="w-8 h-8 rounded-full object-cover" alt="" />
+                  <img src={user.avatar} className="w-8 h-8 rounded-full object-cover" alt={`${user.name}'s avatar`} />
                   <div>
                     <p className="text-xs font-bold text-on-surface">{user.name}</p>
                     <p className="text-[10px] text-on-surface-variant">{user.email}</p>
