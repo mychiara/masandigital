@@ -139,12 +139,36 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     localStorage.setItem(`comments_${article.id}`, JSON.stringify(updated));
   };
 
-  const tocItems = [
-    { id: 'sec-intro', label: 'The Quantum Shift' },
-    { id: 'sec-arch', label: 'Architecting for Hyper-Speed' },
-    { id: 'sec-trust', label: 'Digital Trust Protocols' },
-    { id: 'sec-future', label: 'Future Editorial Outlook' }
-  ];
+  const isHtml = /<[a-z][\s\S]*>/i.test(article.content);
+  const tocItems: { id: string; label: string }[] = [];
+  let finalContent = article.content;
+
+  if (isHtml) {
+    // Parse H2s from HTML
+    const h2Regex = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+    let match;
+    let idx = 0;
+    while ((match = h2Regex.exec(article.content)) !== null) {
+      const label = match[1].replace(/<[^>]*>/g, '').trim();
+      tocItems.push({ id: `heading-${idx}`, label });
+      idx++;
+    }
+
+    // Inject IDs into <h2> tags
+    let count = 0;
+    finalContent = article.content.replace(/<h2([^>]*)>/gi, (m, attrs) => {
+      if (/id=/i.test(attrs)) return m;
+      return `<h2${attrs} id="heading-${count++}">`;
+    });
+  } else {
+    // Plain text fallback static items
+    tocItems.push(
+      { id: 'sec-intro', label: 'Introduction' },
+      { id: 'sec-arch', label: 'Architecting for Hyper-Speed' },
+      { id: 'sec-trust', label: 'Digital Trust Protocols' },
+      { id: 'sec-future', label: 'Future Editorial Outlook' }
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-on-background">
@@ -280,78 +304,87 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
               )}
 
               {/* Dynamic Auto Table of Contents (TOC) - Berada Sebelum Awal Article */}
-              <div className="mb-8 p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md relative overflow-hidden group">
-                <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-2xl pointer-events-none"></div>
-                <h4 className="font-extrabold text-[10px] uppercase tracking-widest text-primary mb-4 flex items-center gap-2 font-sans">
-                  <BookOpen className="w-4 h-4 text-primary animate-pulse" />
-                  Daftar Isi Artikel (Table of Contents)
-                </h4>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 font-bold text-xs text-on-surface-variant font-sans">
-                  {tocItems.map((item) => (
-                    <li key={item.id} className="flex items-center">
-                      <a
-                        href={`#${item.id}`}
-                        className="hover:text-primary transition-all flex items-center gap-2 pl-3 border-l-2 border-primary/25 hover:border-primary py-1.5 w-full hover:translate-x-1 duration-300"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 flex-shrink-0" />
-                        {item.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {tocItems.length > 0 && (
+                <div className="mb-8 p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md relative overflow-hidden group">
+                  <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-2xl pointer-events-none"></div>
+                  <h4 className="font-extrabold text-[10px] uppercase tracking-widest text-primary mb-4 flex items-center gap-2 font-sans">
+                    <BookOpen className="w-4 h-4 text-primary animate-pulse" />
+                    Daftar Isi Artikel (Table of Contents)
+                  </h4>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 font-bold text-xs text-on-surface-variant font-sans">
+                    {tocItems.map((item) => (
+                      <li key={item.id} className="flex items-center">
+                        <a
+                          href={`#${item.id}`}
+                          className="hover:text-primary transition-all flex items-center gap-2 pl-3 border-l-2 border-primary/25 hover:border-primary py-1.5 w-full hover:translate-x-1 duration-300"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 flex-shrink-0" />
+                          {item.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Article Content Body */}
-              <div className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none">
-                {article.content.split('\n\n').map((paragraph, idx) => {
-                  if (idx === 0) {
-                    return (
-                      <p 
-                        key={idx} 
-                        id="sec-intro"
-                        className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none"
-                      >
-                        {paragraph}
-                      </p>
-                    );
-                  }
-                  
-                  if (idx === 1) {
-                    return (
-                      <div key={idx} className="space-y-6">
-                        <h2 id="sec-arch" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                          Architecting for Hyper-Speed
-                        </h2>
-                        <p>{paragraph}</p>
-                      </div>
-                    );
-                  }
+              {isHtml ? (
+                <div 
+                  className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: finalContent }}
+                />
+              ) : (
+                <div className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none">
+                  {finalContent.split('\n\n').map((paragraph, idx) => {
+                    if (idx === 0) {
+                      return (
+                        <p 
+                          key={idx} 
+                          id="sec-intro"
+                          className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none"
+                        >
+                          {paragraph}
+                        </p>
+                      );
+                    }
+                    
+                    if (idx === 1) {
+                      return (
+                        <div key={idx} className="space-y-6">
+                          <h2 id="sec-arch" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
+                            Architecting for Hyper-Speed
+                          </h2>
+                          <p>{paragraph}</p>
+                        </div>
+                      );
+                    }
 
-                  if (idx === 2) {
-                    return (
-                      <div key={idx} className="space-y-6">
-                        <h2 id="sec-trust" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                          Digital Trust Protocols
-                        </h2>
-                        <p>{paragraph}</p>
-                      </div>
-                    );
-                  }
+                    if (idx === 2) {
+                      return (
+                        <div key={idx} className="space-y-6">
+                          <h2 id="sec-trust" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
+                            Digital Trust Protocols
+                          </h2>
+                          <p>{paragraph}</p>
+                        </div>
+                      );
+                    }
 
-                  if (idx === 3) {
-                    return (
-                      <div key={idx} className="space-y-6">
-                        <h2 id="sec-future" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                          Future Editorial Outlook
-                        </h2>
-                        <p>{paragraph}</p>
-                      </div>
-                    );
-                  }
+                    if (idx === 3) {
+                      return (
+                        <div key={idx} className="space-y-6">
+                          <h2 id="sec-future" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
+                            Future Editorial Outlook
+                          </h2>
+                          <p>{paragraph}</p>
+                        </div>
+                      );
+                    }
 
-                  return <p key={idx}>{paragraph}</p>;
-                })}
-              </div>
+                    return <p key={idx}>{paragraph}</p>;
+                  })}
+                </div>
+              )}
 
               {/* Author Biography */}
               <div className="mt-12 p-8 bg-surface-container-low/40 border border-outline-variant/20 rounded-3xl flex flex-col md:flex-row gap-6 items-center shadow-xl backdrop-blur-sm">
