@@ -383,7 +383,9 @@ export default function AdminDashboard() {
         comments_enabled,
         views: 0,
         published_at: published_at || undefined,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        author_name: user?.name || 'Andy Masan',
+        author_avatar: user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop'
       });
 
       // Reload dashboard list
