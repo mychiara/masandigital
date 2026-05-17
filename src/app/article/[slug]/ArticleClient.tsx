@@ -185,7 +185,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
           {/* Above Header Ad Slot */}
           {settings?.ads_enabled && settings.ads_placements.above_header && settings.ads_script_code && (
             <div 
-              className="w-full mb-8 overflow-hidden"
+              className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20"
               dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
             />
           )}
@@ -298,7 +298,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
               {/* Below Title Ad Slot */}
               {settings?.ads_enabled && settings.ads_placements.below_title && settings.ads_script_code && (
                 <div 
-                  className="w-full mb-8 overflow-hidden"
+                  className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20"
                   dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
                 />
               )}
@@ -409,7 +409,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
               {/* Above Comments Ad Slot */}
               {settings?.ads_enabled && settings.ads_placements.above_comments && settings.ads_script_code && (
                 <div 
-                  className="w-full mt-12 overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30"
+                  className="w-full min-h-[90px] mt-12 overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center"
                   dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
                 />
               )}
@@ -514,7 +514,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
               {/* Sidebar Ad Slot */}
               {settings?.ads_enabled && settings.ads_placements.sidebar && settings.ads_script_code && (
                 <div 
-                  className="w-full overflow-hidden"
+                  className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center"
                   dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
                 />
               )}

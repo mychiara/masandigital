@@ -179,7 +179,7 @@ export default function HomePage() {
           {/* Above Header Ad Placement */}
           {settings?.ads_enabled && settings.ads_placements.above_header && settings.ads_script_code && (
             <div 
-              className="w-full mb-8 overflow-hidden"
+              className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20"
               dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
             />
           )}
@@ -460,7 +460,7 @@ export default function HomePage() {
               {/* Sidebar Ad Placement */}
               {settings?.ads_enabled && settings.ads_placements.sidebar && settings.ads_script_code && (
                 <div 
-                  className="w-full overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30"
+                  className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center"
                   dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
                 />
               )}
