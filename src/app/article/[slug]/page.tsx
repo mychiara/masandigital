@@ -15,9 +15,7 @@ interface PageProps {
 export async function generateStaticParams() {
   try {
     const articles = await db.getArticles();
-    const now = new Date();
-    // Only pre-render posts that are published and whose publication time has passed
-    const published = articles.filter(a => a.status === 'published' && new Date(a.published_at || a.created_at) <= now);
+    const published = articles.filter(a => a.status === 'published');
     return published.map((article) => ({
       slug: article.slug,
     }));

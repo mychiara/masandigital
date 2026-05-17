@@ -24,9 +24,7 @@ export default function HomePage() {
     async function loadArticles() {
       setLoading(true);
       const data = await db.getArticles(activeCategory, searchQuery);
-      // Filter out drafts and scheduled articles (future published_at dates)
-      const now = new Date();
-      setArticles(data.filter(a => a.status === 'published' && new Date(a.published_at || a.created_at) <= now));
+      setArticles(data.filter(a => a.status === 'published'));
       setLoading(false);
       setCurrentPage(1); // Reset page to 1 on filter or search changes!
     }
@@ -48,8 +46,7 @@ export default function HomePage() {
     if (activeCategory !== 'All' || searchQuery) {
       async function loadAll() {
         const data = await db.getArticles();
-        const now = new Date();
-        setAllArticles(data.filter(a => a.status === 'published' && new Date(a.published_at || a.created_at) <= now));
+        setAllArticles(data.filter(a => a.status === 'published'));
       }
       loadAll();
     } else {

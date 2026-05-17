@@ -99,11 +99,8 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
 
     // Fetch related articles from the same category
     db.getArticles(initialArticle.category).then(data => {
-      const now = new Date();
       const published = data.filter(
-        a => a.status === 'published' && 
-             a.id !== initialArticle.id && 
-             new Date(a.published_at || a.created_at) <= now
+        a => a.status === 'published' && a.id !== initialArticle.id
       );
       setRelatedArticles(published.slice(0, 5));
     });
