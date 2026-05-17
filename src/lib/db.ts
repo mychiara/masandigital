@@ -199,9 +199,25 @@ const pending = {
   settings: null as Promise<SiteSettings | null> | null,
 };
 
-// Offline Circuit Breaker State (Prevents spamming offline Supabase server)
-let isSupabaseOffline = false;
-let supabaseOfflineTimestamp = 0;
+// Offline Circuit Breaker State (Persisted in sessionStorage to prevent network console noise on refresh)
+const offlineBreaker = {
+  get isOffline(): boolean {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('masandigital_supabase_offline') === 'true';
+  },
+  set isOffline(val: boolean) {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem('masandigital_supabase_offline', String(val));
+    if (val) {
+      sessionStorage.setItem('masandigital_supabase_offline_time', String(Date.now()));
+    }
+  },
+  get timestamp(): number {
+    if (typeof window === 'undefined') return 0;
+    return Number(sessionStorage.getItem('masandigital_supabase_offline_time') || '0');
+  }
+};
+
 const OFFLINE_COOLDOWN = 180000; // 3 minutes cooldown before trying to re-connect
 
 const CACHE_TTL = 30000; // 30 seconds caching window for ultimate performance
@@ -216,7 +232,7 @@ export const db = {
     const nowTime = Date.now();
     
     // Check if we should bypass Supabase due to active circuit breaker
-    const shouldBypassSupabase = isSupabaseOffline && (nowTime - supabaseOfflineTimestamp < OFFLINE_COOLDOWN);
+    const shouldBypassSupabase = offlineBreaker.isOffline && (nowTime - offlineBreaker.timestamp < OFFLINE_COOLDOWN);
     
     if (cache.articles && (nowTime - cache.articles.timestamp < CACHE_TTL)) {
       allArticles = cache.articles.data;
@@ -230,15 +246,14 @@ export const db = {
                 .select('*')
                 .order('created_at', { ascending: false });
               if (!error && data) {
-                isSupabaseOffline = false; // successfully connected!
+                offlineBreaker.isOffline = false; // successfully connected!
                 return data as Article[];
               }
               if (error) throw error;
             } catch (err) {
               const errorMessage = err instanceof Error ? err.message : String(err);
               console.error('Supabase query failed, activating Offline Circuit Breaker:', errorMessage);
-              isSupabaseOffline = true;
-              supabaseOfflineTimestamp = Date.now();
+              offlineBreaker.isOffline = true;
             }
             return null; // indicates connection/query failed
           })();
@@ -489,7 +504,7 @@ export const db = {
   // Get site settings (utilizes cache)
   async getSettings(): Promise<SiteSettings> {
     const nowTime = Date.now();
-    const shouldBypassSupabase = isSupabaseOffline && (nowTime - supabaseOfflineTimestamp < OFFLINE_COOLDOWN);
+    const shouldBypassSupabase = offlineBreaker.isOffline && (nowTime - offlineBreaker.timestamp < OFFLINE_COOLDOWN);
 
     if (cache.settings && (nowTime - cache.settings.timestamp < CACHE_TTL)) {
       return cache.settings.data;
@@ -502,7 +517,7 @@ export const db = {
           try {
             const { data, error } = await supabase.from('settings').select('*').limit(1).maybeSingle();
             if (!error && data) {
-              isSupabaseOffline = false; // successfully connected!
+              offlineBreaker.isOffline = false; // successfully connected!
               const parsedPlacements = typeof data.ads_placements === 'string' 
                 ? JSON.parse(data.ads_placements) 
                 : data.ads_placements;
@@ -534,8 +549,7 @@ export const db = {
           } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             console.warn('Supabase settings query failed, activating Offline Circuit Breaker:', errorMessage);
-            isSupabaseOffline = true;
-            supabaseOfflineTimestamp = Date.now();
+            offlineBreaker.isOffline = true;
           }
           return null;
         })();
@@ -574,7 +588,7 @@ export const db = {
     cache.clear();
 
     const nowTime = Date.now();
-    const shouldBypassSupabase = isSupabaseOffline && (nowTime - supabaseOfflineTimestamp < OFFLINE_COOLDOWN);
+    const shouldBypassSupabase = offlineBreaker.isOffline && (nowTime - offlineBreaker.timestamp < OFFLINE_COOLDOWN);
 
     // Always synchronize with localStorage first for client state resilience
     if (typeof window !== 'undefined') {
@@ -628,11 +642,11 @@ export const db = {
             
             const { error: retryError } = await supabase.from('settings').update(fallbackPayload).eq('id', existing.id);
             if (!retryError) {
-              isSupabaseOffline = false; // connection works!
+              offlineBreaker.isOffline = false; // connection works!
               return settings;
             }
           } else {
-            isSupabaseOffline = false; // connection works!
+            offlineBreaker.isOffline = false; // connection works!
             return settings;
           }
         } else {
@@ -652,19 +666,18 @@ export const db = {
             
             const { error: retryError } = await supabase.from('settings').insert([fallbackPayload]);
             if (!retryError) {
-              isSupabaseOffline = false; // connection works!
+              offlineBreaker.isOffline = false; // connection works!
               return settings;
             }
           } else {
-            isSupabaseOffline = false; // connection works!
+            offlineBreaker.isOffline = false; // connection works!
             return settings;
           }
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         console.error('Supabase settings update failed, activating Offline Circuit Breaker:', errorMessage);
-        isSupabaseOffline = true;
-        supabaseOfflineTimestamp = Date.now();
+        offlineBreaker.isOffline = true;
       }
     } else if (shouldBypassSupabase) {
       console.warn('[masandigital.com] Bypassing settings Supabase save - Offline Circuit Breaker active.');
