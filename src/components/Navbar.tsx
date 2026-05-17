@@ -25,7 +25,14 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
   const router = useRouter();
 
   useEffect(() => {
-    setUser(auth.getCurrentUser());
+    function reloadSession() {
+      setUser(auth.getCurrentUser());
+    }
+    reloadSession();
+    window.addEventListener('masandigital_session_changed', reloadSession);
+    return () => {
+      window.removeEventListener('masandigital_session_changed', reloadSession);
+    };
   }, []);
 
   useEffect(() => {

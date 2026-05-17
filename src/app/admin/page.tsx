@@ -679,6 +679,11 @@ export default function AdminDashboard() {
         }
       }
       
+      // Dispatch custom session changed event for Navbar reactive update
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('masandigital_session_changed'));
+      }
+      
       setSettingsSuccess('Profil penulis berhasil diperbarui secara global!');
       setTimeout(() => setSettingsSuccess(''), 3000);
     }
@@ -711,6 +716,8 @@ export default function AdminDashboard() {
       const filePath = `${fileName}`;
 
       if (db.isSupabase && supabase) {
+        let activeBucket = 'avatars';
+        
         const { data, error } = await supabase.storage
           .from('avatars')
           .upload(filePath, file, {
@@ -720,6 +727,7 @@ export default function AdminDashboard() {
 
         if (error) {
           console.warn('First bucket upload failed, retrying on uploads bucket...', error);
+          activeBucket = 'uploads';
           const { data: fallbackData, error: fallbackError } = await supabase.storage
             .from('uploads')
             .upload(filePath, file, {
@@ -733,7 +741,7 @@ export default function AdminDashboard() {
         }
 
         const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
+          .from(activeBucket)
           .getPublicUrl(filePath);
           
         setProfileAvatar(publicUrl);
