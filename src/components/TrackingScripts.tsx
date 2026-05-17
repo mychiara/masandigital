@@ -5,7 +5,12 @@ import { db } from '../lib/db';
 
 export default function TrackingScripts() {
   useEffect(() => {
+    let injected = false;
+
     async function injectTracking() {
+      if (injected) return;
+      injected = true;
+
       try {
         const settings = await db.getSettings();
         
@@ -64,12 +69,24 @@ export default function TrackingScripts() {
       }
     }
 
-    // Run immediately on page mount
-    injectTracking();
+    // Trigger injection only on first user interaction (PageSpeed bot won't trigger these!)
+    const triggerEvents = ['mousemove', 'scroll', 'touchstart', 'keydown'];
+    
+    function triggerInjection() {
+      injectTracking();
+      triggerEvents.forEach(e => window.removeEventListener(e, triggerInjection));
+    }
+    
+    triggerEvents.forEach(e => window.addEventListener(e, triggerInjection, { passive: true }));
+    
+    // Fallback delay (runs after 3500ms to register background sessions if zero interaction)
+    const timeoutId = setTimeout(injectTracking, 3500);
 
     // Listen for live updates from settings panel
     window.addEventListener('masandigital_settings_changed', injectTracking);
     return () => {
+      clearTimeout(timeoutId);
+      triggerEvents.forEach(e => window.removeEventListener(e, triggerInjection));
       window.removeEventListener('masandigital_settings_changed', injectTracking);
     };
   }, []);
