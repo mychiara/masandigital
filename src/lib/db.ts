@@ -191,7 +191,7 @@ const cache = {
 
 // Active request coalescing registry (prevents parallel identical queries to Supabase)
 const pending = {
-  articles: null as Promise<Article[]> | null,
+  articles: null as Promise<Article[] | null> | null,
   settings: null as Promise<any> | null,
 };
 
@@ -208,6 +208,7 @@ export const db = {
   // Get all articles (supports filtering and search with high-speed in-memory cache)
   async getArticles(category?: string, search?: string): Promise<Article[]> {
     let allArticles: Article[] = [];
+    let querySucceeded = false;
     const nowTime = Date.now();
     
     // Check if we should bypass Supabase due to active circuit breaker
@@ -234,12 +235,16 @@ export const db = {
               isSupabaseOffline = true;
               supabaseOfflineTimestamp = Date.now();
             }
-            return [];
+            return null; // indicates connection/query failed
           })();
         }
         
         try {
-          allArticles = await pending.articles;
+          const res = await pending.articles;
+          if (res !== null) {
+            allArticles = res;
+            querySucceeded = true;
+          }
         } finally {
           pending.articles = null; // reset for next request
         }
@@ -247,13 +252,12 @@ export const db = {
         console.warn(`[masandigital.com] Supabase project is paused/offline. Offline Circuit Breaker active. serving from localStorage/seed in 0ms.`);
       }
       
-      if (allArticles.length === 0) {
+      // Fallback: Only load seed/local articles if the database connection/query failed (or not configured)
+      if (!querySucceeded) {
         allArticles = getLocalArticles();
       }
 
-      if (allArticles.length > 0) {
-        cache.articles = { data: allArticles, timestamp: nowTime };
-      }
+      cache.articles = { data: allArticles, timestamp: nowTime };
     }
     
     // Filter the cached articles in memory (sub-millisecond instant!)
