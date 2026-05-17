@@ -261,12 +261,11 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                 
                 <div className="flex items-center gap-4 border-b border-outline-variant/20 pb-6">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden">
-                    <Image
+                    <img
                       src={article.author_avatar}
                       alt={article.author_name}
-                      fill
-                      sizes="48px"
-                      className="object-cover ring-2 ring-primary/10"
+                      className="w-full h-full object-cover ring-2 ring-primary/10"
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
                     />
                   </div>
                   <div className="flex-grow">
@@ -389,12 +388,11 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
               {/* Author Biography */}
               <div className="mt-12 p-8 bg-surface-container-low/40 border border-outline-variant/20 rounded-3xl flex flex-col md:flex-row gap-6 items-center shadow-xl backdrop-blur-sm">
                 <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary/30 shadow-md">
-                  <Image
+                  <img
                     src={article.author_avatar}
                     alt={article.author_name}
-                    fill
-                    sizes="80px"
-                    className="object-cover"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
                   />
                 </div>
                 <div className="space-y-2 text-center md:text-left">

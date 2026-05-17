@@ -284,12 +284,11 @@ export default function HomePage() {
                         <div className="flex items-center justify-between pt-6 border-t border-outline-variant/10">
                           <div className="flex items-center gap-3">
                             <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-secondary/50">
-                              <Image
+                              <img
                                 src={featuredArticle.author_avatar}
                                 alt={featuredArticle.author_name}
-                                fill
-                                sizes="40px"
-                                className="object-cover"
+                                className="w-full h-full object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
                               />
                             </div>
                             <div>
@@ -362,13 +361,11 @@ export default function HomePage() {
                           <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">
                             <div className="flex items-center gap-2">
                               <div className="relative w-7 h-7 rounded-full overflow-hidden ring-1 ring-primary/30">
-                                <Image
+                                <img
                                   src={article.author_avatar}
                                   alt={article.author_name}
-                                  fill
-                                  loading="lazy"
-                                  sizes="28px"
-                                  className="object-cover"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
                                 />
                               </div>
                               <span className="text-[11px] font-semibold text-on-surface">{article.author_name}</span>
