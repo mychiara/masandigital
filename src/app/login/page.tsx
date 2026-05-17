@@ -17,10 +17,15 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSupabase, setIsSupabase] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
-  // Redirect if already logged in
+  // Redirect if already logged in & evaluate connection dynamically on client
   useEffect(() => {
+    setMounted(true);
+    setIsSupabase(db.isSupabase);
+
     const session = auth.getCurrentUser();
     if (session) {
       router.push('/admin');
@@ -84,7 +89,9 @@ export default function LoginPage() {
           </div>
 
           {/* Toggle Tabs or Secure Locked Header */}
-          {!db.isSupabase ? (
+          {!mounted ? (
+            <div className="w-full h-12 bg-surface-container-low animate-pulse rounded-full mb-6"></div>
+          ) : !isSupabase ? (
             <>
               <div className="flex bg-surface-container-low p-1.5 rounded-full mb-6 border border-outline-variant/10">
                 <button
@@ -126,7 +133,7 @@ export default function LoginPage() {
               )}
             </>
           ) : (
-            <div className="text-center py-3 mb-6 bg-primary/5 rounded-2xl border border-primary/15 text-primary font-bold text-xs flex items-center justify-center gap-1.5">
+            <div className="text-center py-3 mb-6 bg-primary/5 rounded-2xl border border-primary/15 text-primary font-bold text-xs flex items-center justify-center gap-1.5 animate-in fade-in zoom-in-95 duration-200">
               <Key className="w-4 h-4 animate-bounce" />
               Secure Enterprise Administrator Portal
             </div>
