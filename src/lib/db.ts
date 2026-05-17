@@ -453,11 +453,28 @@ export const db = {
           const parsedPlacements = typeof data.ads_placements === 'string' 
             ? JSON.parse(data.ads_placements) 
             : data.ads_placements;
+            
+          // Get local fallback for newer custom settings that might not exist in their DB columns yet
+          let localLimit = 6;
+          if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('masandigital_settings');
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored);
+                if (parsed.homepage_limit !== undefined && parsed.homepage_limit !== null) {
+                  localLimit = Number(parsed.homepage_limit);
+                }
+              } catch (e) {}
+            }
+          }
+
           settings = {
             ...DEFAULT_SETTINGS,
             ...data,
             ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements,
-            homepage_limit: data.homepage_limit !== undefined ? Number(data.homepage_limit) : DEFAULT_SETTINGS.homepage_limit
+            homepage_limit: data.homepage_limit !== undefined && data.homepage_limit !== null
+              ? Number(data.homepage_limit) 
+              : localLimit
           } as SiteSettings;
         }
       } catch (err) {
@@ -487,6 +504,11 @@ export const db = {
   async saveSettings(settings: SiteSettings): Promise<SiteSettings> {
     // Clear cache immediately
     cache.clear();
+
+    // Always synchronize with localStorage first for client state resilience
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('masandigital_settings', JSON.stringify(settings));
+    }
 
     if (isSupabaseConfigured && supabase) {
       try {
