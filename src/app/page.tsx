@@ -16,6 +16,7 @@ export default function HomePage() {
   const [emailSubscribed, setEmailSubscribed] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [settings, setSettings] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch articles on mount and filter changes
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function HomePage() {
       const now = new Date();
       setArticles(data.filter(a => a.status === 'published' && new Date(a.published_at || a.created_at) <= now));
       setLoading(false);
+      setCurrentPage(1); // Reset page to 1 on filter or search changes!
     }
     loadArticles();
   }, [activeCategory, searchQuery]);
@@ -64,6 +66,16 @@ export default function HomePage() {
 
   // Seed trending list (sort by views)
   const trendingArticles = [...articles].sort((a, b) => b.views - a.views).slice(0, 3);
+
+  // Pagination calculations
+  const limit = settings?.homepage_limit || 6;
+  const feedArticles = searchQuery || activeCategory !== 'All' ? articles : recentArticles;
+  const totalPages = Math.ceil(feedArticles.length / limit);
+  
+  const paginatedArticles = feedArticles.slice(
+    (currentPage - 1) * limit,
+    currentPage * limit
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-on-background">
@@ -131,7 +143,7 @@ export default function HomePage() {
                 <div className="space-y-12">
                   
                   {/* High-Impact Featured Post (Hero) */}
-                  {featuredArticle && !searchQuery && activeCategory === 'All' && (
+                  {featuredArticle && currentPage === 1 && !searchQuery && activeCategory === 'All' && (
                     <article className="group relative overflow-hidden bg-surface-container-low/30 border border-outline-variant/25 rounded-3xl shadow-xl hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 transform hover:-translate-y-1">
                       <div className="aspect-[21/9] md:aspect-[16/7] relative overflow-hidden w-full">
                         <Image
@@ -209,7 +221,7 @@ export default function HomePage() {
 
                   {/* Articles Grid list */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {(searchQuery || activeCategory !== 'All' ? articles : recentArticles).map((article) => (
+                    {paginatedArticles.map((article) => (
                       <article
                         key={article.id}
                         className="group neon-glow-card bg-surface-container-low/30 border border-outline-variant/25 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full transform hover:-translate-y-1"
@@ -281,6 +293,62 @@ export default function HomePage() {
                       </article>
                     ))}
                   </div>
+
+                  {/* Elegant Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-12 pt-8 border-t border-outline-variant/15">
+                      <button
+                        onClick={() => {
+                          if (currentPage > 1) {
+                            setCurrentPage(prev => prev - 1);
+                            window.scrollTo({ top: 400, behavior: 'smooth' });
+                          }
+                        }}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 rounded-xl border border-outline-variant/30 text-xs font-bold text-on-surface hover:bg-primary/5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition-all flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Prev
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => {
+                              setCurrentPage(page);
+                              window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${
+                              currentPage === page
+                                ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-md shadow-primary/20 hover:scale-105'
+                                : 'border border-outline-variant/30 text-on-surface hover:bg-primary/5 hover:border-primary/30 active:scale-95'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                         ))}
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (currentPage < totalPages) {
+                            setCurrentPage(prev => prev + 1);
+                            window.scrollTo({ top: 400, behavior: 'smooth' });
+                          }
+                        }}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 rounded-xl border border-outline-variant/30 text-xs font-bold text-on-surface hover:bg-primary/5 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition-all flex items-center gap-1"
+                      >
+                        Next
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
 
                 </div>
               )}

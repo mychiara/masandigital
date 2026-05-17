@@ -66,6 +66,7 @@ export default function AdminDashboard() {
   const [siteTagline, setSiteTagline] = useState('');
   const [siteLogo, setSiteLogo] = useState('');
   const [siteIcon, setSiteIcon] = useState('');
+  const [homepageLimit, setHomepageLimit] = useState(6);
   
   // Search Engine Indexing API states
   const [googleIndexingEnabled, setGoogleIndexingEnabled] = useState(false);
@@ -550,6 +551,7 @@ export default function AdminDashboard() {
         setSiteTagline(settingsData.site_tagline);
         setSiteLogo(settingsData.site_logo || '');
         setSiteIcon(settingsData.site_icon || '');
+        setHomepageLimit(settingsData.homepage_limit !== undefined ? Number(settingsData.homepage_limit) : 6);
         setGoogleIndexingEnabled(settingsData.google_indexing_enabled || false);
         setGoogleIndexingJson(settingsData.google_indexing_json || '');
         setBingApiKey(settingsData.bing_api_key || '');
@@ -786,7 +788,8 @@ export default function AdminDashboard() {
         disclaimer_content: disclaimerContent,
         privacy_content: privacyContent,
         tos_content: tosContent,
-        categories: categories.join(',')
+        categories: categories.join(','),
+        homepage_limit: Number(homepageLimit) || 6
       };
 
       await db.saveSettings(payload);
@@ -2070,6 +2073,27 @@ export default function AdminDashboard() {
                             Ikon persegi untuk tab browser website (PNG/ICO). Ukuran file maks 1MB.
                           </span>
                         </div>
+
+                        {/* New Config: Homepage Articles Count */}
+                        <div className="md:col-span-2 pt-6 border-t border-outline-variant/10 space-y-2">
+                          <label className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1 font-sans">
+                            Jumlah Artikel Per Halaman (Homepage)
+                          </label>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-background/50 p-4 rounded-2xl border border-outline-variant/30 max-w-xl">
+                            <input
+                              type="number"
+                              min="1"
+                              max="50"
+                              required
+                              value={homepageLimit}
+                              onChange={(e) => setHomepageLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-24 bg-background border border-outline-variant/20 focus:border-primary rounded-xl py-2.5 px-3 text-xs font-bold text-on-surface text-center focus:outline-none transition-all font-sans"
+                            />
+                            <div className="text-[11px] text-on-surface-variant leading-relaxed">
+                              Tentukan berapa banyak artikel yang akan ditampilkan pada halaman utama sebelum tombol navigasi halaman (pagination) muncul. <span className="text-primary font-bold">(Default: 6)</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2672,6 +2696,7 @@ export default function AdminDashboard() {
                                   disclaimer_content: disclaimerContent,
                                   privacy_content: privacyContent,
                                   tos_content: tosContent,
+                                  homepage_limit: Number(homepageLimit) || 6,
                                   articles: articles,
                                   subscribers: subscribers ? JSON.parse(subscribers) : [],
                                   exported_at: new Date().toISOString()
@@ -2745,6 +2770,7 @@ export default function AdminDashboard() {
                                       setDisclaimerContent(parsed.disclaimer_content || '');
                                       setPrivacyContent(parsed.privacy_content || '');
                                       setTosContent(parsed.tos_content || '');
+                                      setHomepageLimit(parsed.homepage_limit !== undefined ? Number(parsed.homepage_limit) : 6);
                                       
                                       if (parsed.categories) {
                                         const catsList = parsed.categories.split(',').map((c: string) => c.trim()).filter(Boolean);
@@ -2779,7 +2805,8 @@ export default function AdminDashboard() {
                                         contact_hours: parsed.contact_hours,
                                         disclaimer_content: parsed.disclaimer_content,
                                         privacy_content: parsed.privacy_content,
-                                        tos_content: parsed.tos_content
+                                        tos_content: parsed.tos_content,
+                                        homepage_limit: parsed.homepage_limit !== undefined ? Number(parsed.homepage_limit) : 6
                                       });
 
                                       // Import articles to Supabase one by one

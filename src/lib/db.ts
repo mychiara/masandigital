@@ -48,6 +48,7 @@ export interface SiteSettings {
   privacy_content: string;
   tos_content: string;
   categories: string; // Comma separated values, e.g. "AI,Dev,Strategy,Cloud,Hardware"
+  homepage_limit?: number;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -77,7 +78,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   disclaimer_content: `The information provided by masandigital.com is for general informational purposes only. All information on the site is provided in good faith, however we make no representation or warranty of any kind, express or implied, regarding the accuracy, adequacy, validity, reliability, availability, or completeness of any information on the site.\n\nUnder no circumstance shall we have any liability to you for any loss or damage of any kind incurred as a result of the use of the site or reliance on any information provided on the site. Your use of the site and your reliance on any information on the site is solely at your own risk.`,
   privacy_content: `At masandigital.com, available from https://masandigital.com, the privacy of our visitors is one of our primary priorities. This Privacy Policy document contains types of information that is collected and recorded by masandigital.com and how we use it.\n\nBy using our website, you hereby consent to our Privacy Policy and agree to its terms. We collect personal information transparently to operate our platform, understand reading analytics, customized newsletter subscriptions, and deliver premium ad integrations safely.`,
   tos_content: `Welcome to masandigital.com! These terms and conditions outline the rules and regulations for the use of masandigital.com's Website, located at https://masandigital.com.\n\nBy accessing this website, we assume you accept these terms and conditions in full. Do not continue to use masandigital.com if you do not agree to all of the terms and conditions stated on this page. Other than content you own, masandigital.com owns all intellectual property rights for materials published in this portal.`,
-  categories: 'AI,Dev,Strategy,Cloud,Hardware'
+  categories: 'AI,Dev,Strategy,Cloud,Hardware',
+  homepage_limit: 6
 };
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -454,7 +456,8 @@ export const db = {
           settings = {
             ...DEFAULT_SETTINGS,
             ...data,
-            ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements
+            ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements,
+            homepage_limit: data.homepage_limit !== undefined ? Number(data.homepage_limit) : DEFAULT_SETTINGS.homepage_limit
           } as SiteSettings;
         }
       } catch (err) {
@@ -511,15 +514,16 @@ export const db = {
           disclaimer_content: settings.disclaimer_content,
           privacy_content: settings.privacy_content,
           tos_content: settings.tos_content,
-          categories: settings.categories
+          categories: settings.categories,
+          homepage_limit: settings.homepage_limit !== undefined ? Number(settings.homepage_limit) : 6
         };
 
         if (existing) {
           const { error } = await supabase.from('settings').update(payload).eq('id', existing.id);
           
           if (error) {
-            console.warn('First settings update failed, retrying without site_logo, site_icon, indexing and categories columns:', error);
-            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, ...fallbackPayload } = payload;
+            console.warn('First settings update failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
+            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, homepage_limit, ...fallbackPayload } = payload;
             const { error: retryError } = await supabase.from('settings').update(fallbackPayload).eq('id', existing.id);
             if (!retryError) return settings;
           } else {
@@ -529,8 +533,8 @@ export const db = {
           const { error } = await supabase.from('settings').insert([payload]);
           
           if (error) {
-            console.warn('First settings insert failed, retrying without site_logo, site_icon, indexing and categories columns:', error);
-            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, ...fallbackPayload } = payload;
+            console.warn('First settings insert failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
+            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, homepage_limit, ...fallbackPayload } = payload;
             const { error: retryError } = await supabase.from('settings').insert([fallbackPayload]);
             if (!retryError) return settings;
           } else {
