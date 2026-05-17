@@ -336,7 +336,65 @@ export default function AdminDashboard() {
         throw new Error(`Format JSON tidak valid: ${e.message}`);
       }
 
-      // Validation
+      // 1. Array of Articles (Batch Batch Import)
+      if (Array.isArray(parsed)) {
+        let successCount = 0;
+        for (const art of parsed) {
+          if (!art.title || !art.title.trim() || !art.content || !art.content.trim()) continue;
+          
+          const cleanTitle = art.title.trim();
+          const slug = cleanTitle.toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+            
+          const cover_image = art.cover_image || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800';
+          const category = art.category || 'AI';
+          const excerpt = art.excerpt || cleanTitle;
+          const tags = art.tags || '';
+          const customKeywords = art.keywords || '';
+          const keywords = [customKeywords, tags].filter(Boolean).join(', ') || cleanTitle;
+          const status = art.status === 'published' ? 'published' : 'draft';
+          const comments_enabled = art.comments_enabled !== undefined ? !!art.comments_enabled : true;
+          
+          let published_at = null;
+          if (art.published_at) {
+            published_at = new Date(art.published_at).toISOString();
+          }
+          
+          // Ensure slug uniqueness
+          const existing = articles.find(a => a.slug === slug);
+          const uniqueSlug = existing ? `${slug}-${Math.floor(Math.random() * 9000) + 1000}` : slug;
+          
+          await db.createArticle({
+            title: cleanTitle,
+            slug: uniqueSlug,
+            excerpt,
+            content: art.content,
+            cover_image,
+            category,
+            keywords,
+            status,
+            comments_enabled,
+            views: art.views || 0,
+            published_at: published_at || undefined,
+            created_at: new Date().toISOString(),
+            author_name: art.author_name || user?.name || 'Andy Masan',
+            author_avatar: art.author_avatar || user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop'
+          });
+          successCount++;
+        }
+        
+        // Reload list and reset
+        const refreshedArticles = await db.getArticles();
+        setArticles(refreshedArticles);
+        setImportJsonText('');
+        setShowImportModal(false);
+        alert(`[CMS Sukses Import]\nLuar biasa! Berhasil meng-import ${successCount} artikel sekaligus ke database CMS Anda!`);
+        return;
+      }
+
+      // 2. Single Article Fallback
       if (!parsed.title || !parsed.title.trim()) {
         throw new Error("Field 'title' wajib diisi!");
       }
@@ -344,7 +402,6 @@ export default function AdminDashboard() {
         throw new Error("Field 'content' wajib diisi!");
       }
 
-      // Pre-process variables
       const cleanTitle = parsed.title.trim();
       const slug = cleanTitle.toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
@@ -360,18 +417,15 @@ export default function AdminDashboard() {
       const status = parsed.status === 'published' ? 'published' : 'draft';
       const comments_enabled = parsed.comments_enabled !== undefined ? !!parsed.comments_enabled : true;
 
-      // Parse schedule or publish date
       let published_at = null;
       if (parsed.published_at) {
         published_at = new Date(parsed.published_at).toISOString();
       }
 
-      // Check if slug is unique
       const existing = articles.find(a => a.slug === slug);
       const uniqueSlug = existing ? `${slug}-${Date.now().toString().slice(-4)}` : slug;
 
-      // Save article to Supabase
-      const newArticle = await db.createArticle({
+      await db.createArticle({
         title: cleanTitle,
         slug: uniqueSlug,
         excerpt,
@@ -388,11 +442,8 @@ export default function AdminDashboard() {
         author_avatar: user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop'
       });
 
-      // Reload dashboard list
       const refreshedArticles = await db.getArticles();
       setArticles(refreshedArticles);
-
-      // Reset
       setImportJsonText('');
       setShowImportModal(false);
       alert(`[CMS Sukses Import]\nArtikel "${cleanTitle}" berhasil di-import ke CMS!\nStatus: ${status.toUpperCase()}`);
