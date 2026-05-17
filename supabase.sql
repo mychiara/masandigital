@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
     privacy_content TEXT,
     tos_content TEXT,
     categories TEXT DEFAULT 'AI,Dev,Strategy,Cloud,Hardware',
+    homepage_limit INTEGER DEFAULT 6,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

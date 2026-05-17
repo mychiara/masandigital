@@ -251,7 +251,9 @@ export const db = {
               }
               if (error) throw error;
             } catch (err) {
-              const errorMessage = err instanceof Error ? err.message : String(err);
+              const errorMessage = typeof err === 'object' && err !== null
+                ? (err as any).message || JSON.stringify(err)
+                : String(err);
               console.error('Supabase query failed, activating Offline Circuit Breaker:', errorMessage);
               offlineBreaker.isOffline = true;
             }
@@ -547,7 +549,9 @@ export const db = {
               } as SiteSettings;
             }
           } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : String(err);
+            const errorMessage = typeof err === 'object' && err !== null
+              ? (err as any).message || JSON.stringify(err)
+              : String(err);
             console.warn('Supabase settings query failed, activating Offline Circuit Breaker:', errorMessage);
             offlineBreaker.isOffline = true;
           }
@@ -675,7 +679,9 @@ export const db = {
           }
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
+        const errorMessage = typeof err === 'object' && err !== null
+          ? (err as any).message || JSON.stringify(err)
+          : String(err);
         console.error('Supabase settings update failed, activating Offline Circuit Breaker:', errorMessage);
         offlineBreaker.isOffline = true;
       }
