@@ -299,10 +299,8 @@ async function main() {
       excerpt: excerpt,
       category: item.cat,
       cover_image: coverImage,
-      author_name: i % 2 === 0 ? "Andy Masan" : "Sarah Chen",
-      author_avatar: i % 2 === 0 
-        ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop"
-        : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=250&auto=format&fit=crop",
+      author_name: "Mas Andy",
+      author_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop",
       reading_time: articleData.readingTime,
       status: "published",
       views: Math.floor(Math.random() * 850) + 45, // Seed views acak realistis
@@ -316,14 +314,36 @@ async function main() {
   fs.writeFileSync(backupPath, JSON.stringify(articlesToInsert, null, 2), "utf8");
   console.log(`✓ Berhasil menyimpan salinan 100 artikel premium ke file: [${backupPath}]`);
   
-  // 2. Unggah Langsung ke Database Supabase Anda via REST API
-  console.log("\nSedang mengunggah 100 artikel secara batch langsung ke database Supabase Anda...");
+  // 2. Unggah Langsung ke Database Supabase Anda via REST API dengan Autentikasi Admin
+  console.log("\nSedang melakukan autentikasi admin ke Supabase...");
   try {
+    const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: "admin@masandigital.com",
+        password: "admin123"
+      })
+    });
+
+    if (!authResponse.ok) {
+      const errText = await authResponse.text();
+      throw new Error(`Autentikasi gagal: ${errText}`);
+    }
+
+    const authData = await authResponse.json();
+    const accessToken = authData.access_token;
+    console.log("✓ Autentikasi berhasil! Token akses diperoleh.");
+
+    console.log("Sedang mengunggah 100 artikel secara batch langsung ke database Supabase...");
     const response = await fetch(`${SUPABASE_URL}/rest/v1/articles`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates' // Berfungsi sebagai UPSERT berdasarkan constraint slug!
       },
@@ -335,15 +355,14 @@ async function main() {
       throw new Error(`HTTP ${response.status}: ${errText}`);
     }
 
-    console.log("✓ LUAR BIASA! 100 artikel SEO premium Anda telah berhasil di-import LANGSUNG ke database Supabase!");
-    console.log("Semua artikel kini aktif dan siap dirayap oleh mesin pencari Google (GSC) secara real-time!");
+    console.log("✓ LUAR BIASA! 100 artikel SEO premium dengan penulis 'Mas Andy' telah sukses di-import LANGSUNG ke Supabase secara otomatis!");
+    console.log("Semua artikel kini aktif dan siap dirayap oleh mesin pencari Google!");
   } catch (err) {
-    console.error("✗ Gagal mengunggah langsung ke database Supabase:", err.message);
+    console.error("✗ Gagal mengunggah otomatis ke database Supabase:", err.message);
     console.log("\nTips: Anda masih dapat menggunakan file cadangan '100_articles_ready.json' untuk di-import manual!");
   }
 
   console.log("\n=== PROSES BULK IMPORTER SELESAI ===");
-  console.log("Silakan jalankan script ini di terminal Anda dengan mengetik: node scripts/bulk-import-100-articles.js");
 }
 
 main();

@@ -379,8 +379,8 @@ export default function AdminDashboard() {
             views: art.views || 0,
             published_at: published_at || undefined,
             created_at: new Date().toISOString(),
-            author_name: art.author_name || user?.name || 'Andy Masan',
-            author_avatar: art.author_avatar || user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop'
+            author_name: "Mas Andy",
+            author_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop"
           });
           successCount++;
         }
@@ -438,8 +438,8 @@ export default function AdminDashboard() {
         views: 0,
         published_at: published_at || undefined,
         created_at: new Date().toISOString(),
-        author_name: user?.name || 'Andy Masan',
-        author_avatar: user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop'
+        author_name: "Mas Andy",
+        author_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop"
       });
 
       const refreshedArticles = await db.getArticles();
@@ -495,7 +495,11 @@ export default function AdminDashboard() {
         const session = auth.getCurrentUser();
         const articleData = await db.getArticles();
         if (session && session.role === 'author') {
-          setArticles(articleData.filter(a => a.author_name === session.name));
+          if (session.name === "Andy Masan" || session.name === "Mas Andy") {
+            setArticles(articleData.filter(a => a.author_name === "Andy Masan" || a.author_name === "Mas Andy"));
+          } else {
+            setArticles(articleData.filter(a => a.author_name === session.name));
+          }
         } else {
           setArticles(articleData);
         }
