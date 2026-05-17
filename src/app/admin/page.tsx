@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import { db, Article, SiteSettings } from '../../lib/db';
+import { db, Article, SiteSettings, supabase } from '../../lib/db';
 import { auth, UserProfile } from '../../lib/auth';
 import { 
   FileText, 
@@ -58,6 +58,7 @@ export default function AdminDashboard() {
   const [activeSettingsGroup, setActiveSettingsGroup] = useState<'identity' | 'monetization' | 'tracking' | 'pages' | 'categories' | 'indexing' | 'backup' | 'profile'>('identity');
   const [profileName, setProfileName] = useState('');
   const [profileAvatar, setProfileAvatar] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const router = useRouter();
 
   // Settings State variables
@@ -678,6 +679,79 @@ export default function AdminDashboard() {
       
       setSettingsSuccess('Profil penulis berhasil diperbarui secara global!');
       setTimeout(() => setSettingsSuccess(''), 3000);
+    }
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Ukuran file foto maksimal adalah 5MB.');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    
+    const getBase64 = () => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+      });
+    };
+
+    try {
+      const session = auth.getCurrentUser();
+      const userEmail = session?.email || 'user';
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `avatar_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      if (db.isSupabase && supabase) {
+        const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (error) {
+          console.warn('First bucket upload failed, retrying on uploads bucket...', error);
+          const { data: fallbackData, error: fallbackError } = await supabase.storage
+            .from('uploads')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: true
+            });
+
+          if (fallbackError) {
+            throw new Error(fallbackError.message);
+          }
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        setProfileAvatar(publicUrl);
+        alert('Foto profil berhasil diunggah ke Supabase Storage!');
+      } else {
+        const base64Url = await getBase64();
+        setProfileAvatar(base64Url);
+        alert('Foto profil berhasil dimuat secara lokal (Base64 Fallback)!');
+      }
+    } catch (err: any) {
+      console.warn('Gagal upload ke Supabase Storage, menggunakan Base64 Fallback:', err);
+      try {
+        const base64Url = await getBase64();
+        setProfileAvatar(base64Url);
+        alert('Foto profil disimpan via Local Base64 Fallback!');
+      } catch (bErr) {
+        alert('Gagal memproses file foto.');
+      }
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -2770,18 +2844,38 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Profile Avatar Input */}
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 flex-grow">
                           <label className="text-[11px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
                             Avatar URL / Foto Profil
                           </label>
-                          <input
-                            type="url"
-                            required
-                            placeholder="https://images.unsplash.com/photo-..."
-                            value={profileAvatar}
-                            onChange={(e) => setProfileAvatar(e.target.value)}
-                            className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-2.5 px-4 text-xs text-on-surface focus:outline-none transition-all"
-                          />
+                          <div className="flex gap-2.5">
+                            <input
+                              type="url"
+                              required
+                              placeholder="https://images.unsplash.com/photo-..."
+                              value={profileAvatar}
+                              onChange={(e) => setProfileAvatar(e.target.value)}
+                              className="flex-grow bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-2.5 px-4 text-xs text-on-surface focus:outline-none transition-all"
+                            />
+                            <label
+                              htmlFor="profile-avatar-upload"
+                              className={`flex items-center justify-center gap-1.5 px-4 rounded-xl text-xs font-bold text-white bg-primary hover:opacity-95 shadow-md cursor-pointer transition-all whitespace-nowrap ${isUploadingAvatar ? 'opacity-50 pointer-events-none' : ''}`}
+                            >
+                              {isUploadingAvatar ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <UploadCloud className="w-3.5 h-3.5" />
+                              )}
+                              Upload Foto
+                            </label>
+                            <input
+                              type="file"
+                              id="profile-avatar-upload"
+                              accept="image/*"
+                              onChange={handleAvatarFileChange}
+                              className="hidden"
+                            />
+                          </div>
                         </div>
                       </div>
 
