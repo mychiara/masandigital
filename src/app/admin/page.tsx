@@ -338,6 +338,44 @@ export default function AdminDashboard() {
         throw new Error(`Format JSON tidak valid: ${e.message}`);
       }
 
+      // Extract categories from JSON import and automatically register new ones
+      const importedCategories = new Set<string>();
+      if (Array.isArray(parsed)) {
+        for (const art of parsed) {
+          if (art.category && art.category.trim()) {
+            importedCategories.add(art.category.trim());
+          }
+        }
+      } else {
+        if (parsed.category && parsed.category.trim()) {
+          importedCategories.add(parsed.category.trim());
+        }
+      }
+
+      if (importedCategories.size > 0) {
+        const currentSettings = await db.getSettings();
+        const existingCats = (currentSettings.categories || '')
+          .split(',')
+          .map(c => c.trim())
+          .filter(Boolean);
+          
+        let hasNewCategory = false;
+        const updatedCats = [...existingCats];
+        
+        for (const cat of importedCategories) {
+          if (!existingCats.some(c => c.toLowerCase() === cat.toLowerCase())) {
+            updatedCats.push(cat);
+            hasNewCategory = true;
+          }
+        }
+        
+        if (hasNewCategory) {
+          currentSettings.categories = updatedCats.join(', ');
+          await db.saveSettings(currentSettings);
+          setCategories(updatedCats);
+        }
+      }
+
       // 1. Array of Articles (Batch Batch Import)
       if (Array.isArray(parsed)) {
         let successCount = 0;
