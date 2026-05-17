@@ -2,23 +2,9 @@ import { MetadataRoute } from 'next';
 import { db } from '../lib/db';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Extract and clean the domain name dynamically from the site settings
-  let baseUrl = 'https://masandigital.com';
+  const baseUrl = 'https://masandigital.com';
   
-  try {
-    const settings = await db.getSettings();
-    if (settings && settings.site_title) {
-      const cleanDomain = settings.site_title
-        .toLowerCase()
-        .replace(/^(https?:\/\/)?(www\.)?/, '')
-        .trim();
-      baseUrl = `https://${cleanDomain}`;
-    }
-  } catch (err) {
-    console.warn('Failed to dynamic query site_title for sitemap, falling back:', err);
-  }
-  
-  let articleEntries: any[] = [];
+  let articleEntries: MetadataRoute.Sitemap = [];
   
   try {
     // Fetch all active articles for dynamic sitemap inclusion
@@ -29,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     articleEntries = publishedArticles.map((article) => ({
       url: `${baseUrl}/article/${article.slug}`,
       lastModified: new Date(article.published_at || article.created_at),
-      changeFrequency: 'weekly',
+      changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
   } catch (err) {
@@ -44,10 +30,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/login`,
+      url: `${baseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.3,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/privacy`,
@@ -66,18 +58,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/about`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/contact`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.6,
     },
     ...articleEntries,
   ];

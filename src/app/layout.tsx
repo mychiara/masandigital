@@ -7,6 +7,7 @@ import { db } from "../lib/db";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
 });
 
 // Dynamic metadata generation (Runs entirely on server-side for GSC & SEO verification)
@@ -20,6 +21,29 @@ export async function generateMetadata(): Promise<Metadata> {
     const meta: Metadata = {
       title: `${title} | ${tagline}`,
       description: about.slice(0, 160),
+      metadataBase: new URL('https://masandigital.com'),
+      alternates: {
+        canonical: '/',
+      },
+      openGraph: {
+        title: `${title} | ${tagline}`,
+        description: about.slice(0, 160),
+        url: 'https://masandigital.com',
+        siteName: title,
+        type: 'website',
+        locale: 'id_ID',
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
     };
 
     if (settings.google_site_verification && settings.google_site_verification.trim()) {

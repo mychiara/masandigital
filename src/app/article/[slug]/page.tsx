@@ -43,11 +43,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${article.title} | masandigital.com`,
     description: article.excerpt || article.title,
     keywords: article.keywords ? article.keywords.split(',').map(k => k.trim()).filter(Boolean) : undefined,
+    alternates: {
+      canonical: `/article/${article.slug}`,
+    },
     openGraph: {
       title: article.title,
       description: article.excerpt,
-      images: [{ url: article.cover_image }],
+      images: [{ url: article.cover_image, width: 1200, height: 630 }],
       type: 'article',
+      publishedTime: new Date(article.published_at || article.created_at).toISOString(),
+      authors: [article.author_name],
+      section: article.category,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.excerpt,
+      images: [article.cover_image],
     },
   };
 }

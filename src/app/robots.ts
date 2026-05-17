@@ -1,28 +1,29 @@
 import { MetadataRoute } from 'next';
-import { db } from '../lib/db';
 
-export default async function robots(): Promise<MetadataRoute.Robots> {
-  let baseUrl = 'https://masandigital.com';
-  
-  try {
-    const settings = await db.getSettings();
-    if (settings && settings.site_title) {
-      const cleanDomain = settings.site_title
-        .toLowerCase()
-        .replace(/^(https?:\/\/)?(www\.)?/, '')
-        .trim();
-      baseUrl = `https://${cleanDomain}`;
-    }
-  } catch (err) {
-    console.warn('Failed to dynamic query site_title for robots.txt sitemap, falling back:', err);
-  }
+export default function robots(): MetadataRoute.Robots {
+  const baseUrl = 'https://masandigital.com';
 
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: ['/admin', '/admin/edit', '/login'],
-    },
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/admin', '/admin/edit', '/login'],
+      },
+      {
+        userAgent: 'Googlebot',
+        allow: '/',
+        disallow: ['/admin', '/admin/edit', '/login'],
+      },
+      {
+        userAgent: 'Mediapartners-Google',
+        allow: '/',
+      },
+      {
+        userAgent: 'AdsBot-Google',
+        allow: '/',
+      },
+    ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
