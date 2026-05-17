@@ -679,6 +679,20 @@ export default function AdminDashboard() {
         }
       }
       
+      // Update Supabase Auth user metadata permanently on the database
+      if (db.isSupabase && supabase) {
+        try {
+          supabase.auth.updateUser({
+            data: {
+              name: profileName,
+              avatar: profileAvatar
+            }
+          });
+        } catch (authErr) {
+          console.warn('Failed to update Supabase Auth metadata:', authErr);
+        }
+      }
+
       // Dispatch custom session changed event for Navbar reactive update
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('masandigital_session_changed'));
