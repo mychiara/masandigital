@@ -130,6 +130,40 @@ export default function HomePage() {
     return list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }, [settings, categoryCounts]);
 
+  // Helper to generate a beautiful, responsive, and compact pagination layout
+  const getPaginationRange = () => {
+    const range: (number | string)[] = [];
+    
+    // If totalPages is small, just show all
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    // Always show page 1
+    range.push(1);
+    
+    if (currentPage > 3) {
+      range.push('...');
+    }
+    
+    // Show pages around currentPage
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    
+    if (currentPage < totalPages - 2) {
+      range.push('...');
+    }
+    
+    // Always show last page
+    range.push(totalPages);
+    
+    return range;
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-on-background">
       {/* Header Navigation */}
@@ -367,22 +401,34 @@ export default function HomePage() {
                       </button>
 
                       <div className="flex items-center gap-1.5">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                          <button
-                            key={page}
-                            onClick={() => {
-                              setCurrentPage(page);
-                              window.scrollTo({ top: 400, behavior: 'smooth' });
-                            }}
-                            className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${
-                              currentPage === page
-                                ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-md shadow-primary/20 hover:scale-105'
-                                : 'border border-outline-variant/30 text-on-surface hover:bg-primary/5 hover:border-primary/30 active:scale-95'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                         ))}
+                        {getPaginationRange().map((page, idx) => {
+                          if (page === '...') {
+                            return (
+                              <span
+                                key={`ellipsis-${idx}`}
+                                className="w-9 h-9 rounded-xl text-xs font-black flex items-center justify-center text-on-surface-variant/40 select-none"
+                              >
+                                ...
+                              </span>
+                            );
+                          }
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => {
+                                setCurrentPage(Number(page));
+                                window.scrollTo({ top: 400, behavior: 'smooth' });
+                              }}
+                              className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${
+                                currentPage === page
+                                  ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-md shadow-primary/20 hover:scale-105'
+                                  : 'border border-outline-variant/30 text-on-surface hover:bg-primary/5 hover:border-primary/30 active:scale-95'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        })}
                       </div>
 
                       <button
