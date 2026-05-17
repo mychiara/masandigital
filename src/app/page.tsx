@@ -17,6 +17,7 @@ export default function HomePage() {
   const [emailInput, setEmailInput] = useState('');
   const [settings, setSettings] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [allArticles, setAllArticles] = useState<Article[]>([]);
 
   // Fetch articles on mount and filter changes
   useEffect(() => {
@@ -39,6 +40,16 @@ export default function HomePage() {
       setSettings(s);
     }
     loadSettings();
+  }, []);
+
+  // Load all published articles for global category counts in the sidebar
+  useEffect(() => {
+    async function loadAll() {
+      const data = await db.getArticles();
+      const now = new Date();
+      setAllArticles(data.filter(a => a.status === 'published' && new Date(a.published_at || a.created_at) <= now));
+    }
+    loadAll();
   }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -76,6 +87,48 @@ export default function HomePage() {
     (currentPage - 1) * limit,
     currentPage * limit
   );
+
+  // Compute category counts globally for the sidebar Category directory
+  const categoryCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    allArticles.forEach(a => {
+      const cat = a.category.trim();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [allArticles]);
+
+  const categoryList = React.useMemo(() => {
+    const list: { name: string; count: number }[] = [];
+    
+    // Start with predefined categories from site settings
+    const configured = settings?.categories
+      ? settings.categories.split(',').map((c: string) => c.trim()).filter(Boolean)
+      : ['AI', 'Web Development', 'Tutorial', 'Cyber Security', 'Cloud Computing'];
+      
+    const seen = new Set<string>();
+    
+    configured.forEach((cat: string) => {
+      seen.add(cat.toLowerCase());
+      list.push({
+        name: cat,
+        count: categoryCounts[cat] || 0
+      });
+    });
+    
+    // Add any dynamic categories found in articles but not in configured settings
+    Object.keys(categoryCounts).forEach((cat: string) => {
+      if (!seen.has(cat.toLowerCase())) {
+        list.push({
+          name: cat,
+          count: categoryCounts[cat]
+        });
+      }
+    });
+    
+    // Sort categories by article count desc, then name asc
+    return list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [settings, categoryCounts]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-on-background">
@@ -392,6 +445,46 @@ export default function HomePage() {
                         {t.title}
                       </h5>
                     </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dynamic Categories Count Sidebar Widget */}
+              <div className="p-6 bg-surface-container-low/40 border border-outline-variant/20 rounded-2xl shadow-xl backdrop-blur-sm">
+                <h4 className="font-extrabold text-xs uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary animate-pulse" />
+                  Category
+                </h4>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1 scrollbar-thin">
+                  {categoryList.map((cat) => (
+                    <button
+                      key={cat.name}
+                      onClick={() => {
+                        setActiveCategory(cat.name);
+                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                      }}
+                      className={`w-full group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${
+                        activeCategory.toLowerCase() === cat.name.toLowerCase()
+                          ? 'bg-gradient-to-r from-primary/25 to-secondary/15 border-primary/40 shadow-md text-primary font-black scale-[1.02]'
+                          : 'bg-surface-container-lowest/40 border-outline-variant/10 hover:border-primary/25 hover:bg-surface-container-high text-on-surface'
+                      }`}
+                    >
+                      <span className="text-xs font-bold tracking-wide flex items-center gap-2">
+                        <span className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          activeCategory.toLowerCase() === cat.name.toLowerCase()
+                            ? 'bg-primary scale-125'
+                            : 'bg-on-surface-variant/40 group-hover:bg-primary group-hover:scale-125'
+                        }`}></span>
+                        {cat.name}
+                      </span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border transition-all ${
+                        activeCategory.toLowerCase() === cat.name.toLowerCase()
+                          ? 'bg-primary/20 text-primary border-primary/25'
+                          : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/20 group-hover:bg-primary/10 group-hover:text-primary group-hover:border-primary/20'
+                      }`}>
+                        {cat.count} {cat.count === 1 ? 'post' : 'posts'}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>
