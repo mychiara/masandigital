@@ -189,6 +189,12 @@ const cache = {
   }
 };
 
+// Active request coalescing registry (prevents parallel identical queries to Supabase)
+const pending = {
+  articles: null as Promise<Article[]> | null,
+  settings: null as Promise<any> | null,
+};
+
 const CACHE_TTL = 30000; // 30 seconds caching window for ultimate performance
 
 export const db = {
@@ -203,24 +209,36 @@ export const db = {
       allArticles = cache.articles.data;
     } else {
       if (isSupabaseConfigured && supabase) {
+        if (!pending.articles) {
+          pending.articles = (async () => {
+            try {
+              const { data, error } = await supabase
+                .from('articles')
+                .select('*')
+                .order('created_at', { ascending: false });
+              if (!error && data) {
+                return data as Article[];
+              }
+              if (error) throw error;
+            } catch (err) {
+              console.error('Supabase query failed, falling back to local database:', err);
+            }
+            return [];
+          })();
+        }
+        
         try {
-          const { data, error } = await supabase
-            .from('articles')
-            .select('*')
-            .order('created_at', { ascending: false });
-          if (!error && data) {
-            allArticles = data as Article[];
-            cache.articles = { data: allArticles, timestamp: nowTime };
-          } else if (error) {
-            throw error;
-          }
-        } catch (err) {
-          console.error('Supabase query failed, falling back to local database:', err);
+          allArticles = await pending.articles;
+        } finally {
+          pending.articles = null; // reset for next request
         }
       }
       
       if (allArticles.length === 0) {
         allArticles = getLocalArticles();
+      }
+
+      if (allArticles.length > 0) {
         cache.articles = { data: allArticles, timestamp: nowTime };
       }
     }
@@ -447,38 +465,48 @@ export const db = {
 
     let settings: SiteSettings | null = null;
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.from('settings').select('*').limit(1).maybeSingle();
-        if (!error && data) {
-          const parsedPlacements = typeof data.ads_placements === 'string' 
-            ? JSON.parse(data.ads_placements) 
-            : data.ads_placements;
-            
-          // Get local fallback for newer custom settings that might not exist in their DB columns yet
-          let localLimit = 6;
-          if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('masandigital_settings');
-            if (stored) {
-              try {
-                const parsed = JSON.parse(stored);
-                if (parsed.homepage_limit !== undefined && parsed.homepage_limit !== null) {
-                  localLimit = Number(parsed.homepage_limit);
+      if (!pending.settings) {
+        pending.settings = (async () => {
+          try {
+            const { data, error } = await supabase.from('settings').select('*').limit(1).maybeSingle();
+            if (!error && data) {
+              const parsedPlacements = typeof data.ads_placements === 'string' 
+                ? JSON.parse(data.ads_placements) 
+                : data.ads_placements;
+                
+              let localLimit = 6;
+              if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('masandigital_settings');
+                if (stored) {
+                  try {
+                    const parsed = JSON.parse(stored);
+                    if (parsed.homepage_limit !== undefined && parsed.homepage_limit !== null) {
+                      localLimit = Number(parsed.homepage_limit);
+                    }
+                  } catch (e) {}
                 }
-              } catch (e) {}
-            }
-          }
+              }
 
-          settings = {
-            ...DEFAULT_SETTINGS,
-            ...data,
-            ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements,
-            homepage_limit: data.homepage_limit !== undefined && data.homepage_limit !== null
-              ? Number(data.homepage_limit) 
-              : localLimit
-          } as SiteSettings;
-        }
-      } catch (err) {
-        console.warn('Supabase settings query failed, using local settings:', err);
+              return {
+                ...DEFAULT_SETTINGS,
+                ...data,
+                ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements,
+                homepage_limit: data.homepage_limit !== undefined && data.homepage_limit !== null
+                  ? Number(data.homepage_limit) 
+                  : localLimit
+              } as SiteSettings;
+            }
+          } catch (err) {
+            console.warn('Supabase settings query failed, using local settings:', err);
+          }
+          return null;
+        })();
+      }
+
+      try {
+        settings = await pending.settings;
+      } finally {
+        pending.settings = null; // reset for next request
       }
     }
     
