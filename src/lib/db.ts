@@ -172,44 +172,76 @@ const saveLocalArticles = (articles: Article[]) => {
   }
 };
 
+// ==========================================
+// Advanced Sub-Millisecond In-Memory Caching System
+// ==========================================
+const cache = {
+  articles: null as { data: Article[]; timestamp: number } | null,
+  articleBySlug: {} as Record<string, { data: Article | null; timestamp: number }>,
+  settings: null as { data: any; timestamp: number } | null,
+  
+  clear() {
+    this.articles = null;
+    this.articleBySlug = {};
+    this.settings = null;
+  }
+};
+
+const CACHE_TTL = 30000; // 30 seconds caching window for ultimate performance
+
 export const db = {
   isSupabase: isSupabaseConfigured,
 
-  // Get all articles (supports filtering and search)
+  // Get all articles (supports filtering and search with high-speed in-memory cache)
   async getArticles(category?: string, search?: string): Promise<Article[]> {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        let query = supabase.from('articles').select('*').order('created_at', { ascending: false });
-        
-        if (category && category !== 'All') {
-          query = query.eq('category', category);
+    let allArticles: Article[] = [];
+    const nowTime = Date.now();
+    
+    if (cache.articles && (nowTime - cache.articles.timestamp < CACHE_TTL)) {
+      allArticles = cache.articles.data;
+    } else {
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('articles')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && data) {
+            allArticles = data as Article[];
+            cache.articles = { data: allArticles, timestamp: nowTime };
+          } else if (error) {
+            throw error;
+          }
+        } catch (err) {
+          console.error('Supabase query failed, falling back to local database:', err);
         }
-        
-        if (search) {
-          query = query.ilike('title', `%${search}%`);
-        }
-        
-        const { data, error } = await query;
-        if (error) throw error;
-        return data as Article[];
-      } catch (err) {
-        console.error('Supabase query failed, falling back to local database:', err);
+      }
+      
+      if (allArticles.length === 0) {
+        allArticles = getLocalArticles();
+        cache.articles = { data: allArticles, timestamp: nowTime };
       }
     }
-
-    // Local Storage Fallback
-    let articles = getLocalArticles();
+    
+    // Filter the cached articles in memory (sub-millisecond instant!)
+    let filtered = [...allArticles];
     if (category && category !== 'All') {
-      articles = articles.filter(a => a.category.toLowerCase() === category.toLowerCase());
+      filtered = filtered.filter(a => a.category.toLowerCase() === category.toLowerCase());
     }
     if (search) {
-      articles = articles.filter(a => a.title.toLowerCase().includes(search.toLowerCase()));
+      filtered = filtered.filter(a => a.title.toLowerCase().includes(search.toLowerCase()));
     }
-    return articles;
+    return filtered;
   },
 
-  // Get a single article by slug
+  // Get a single article by slug (utilizes in-memory cache)
   async getArticleBySlug(slug: string): Promise<Article | null> {
+    const nowTime = Date.now();
+    if (cache.articleBySlug[slug] && (nowTime - cache.articleBySlug[slug].timestamp < CACHE_TTL)) {
+      return cache.articleBySlug[slug].data;
+    }
+
+    let article: Article | null = null;
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
@@ -217,20 +249,30 @@ export const db = {
           .select('*')
           .eq('slug', slug)
           .maybeSingle();
-        if (error) throw error;
-        if (data) return data as Article;
+        if (!error && data) {
+          article = data as Article;
+        } else if (error) {
+          throw error;
+        }
       } catch (err) {
         console.error('Supabase query failed, falling back to local:', err);
       }
     }
 
-    // Local Storage Fallback
-    const articles = getLocalArticles();
-    return articles.find(a => a.slug === slug) || null;
+    if (!article) {
+      const articles = getLocalArticles();
+      article = articles.find(a => a.slug === slug) || null;
+    }
+
+    cache.articleBySlug[slug] = { data: article, timestamp: nowTime };
+    return article;
   },
 
-  // Create article
+  // Create article (invalidates cache)
   async createArticle(articleData: Partial<Article>): Promise<Article> {
+    // Clear cache immediately
+    cache.clear();
+
     const slug = articleData.title
       ? articleData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
       : 'untitled-' + Math.random().toString(36).substr(2, 5);
@@ -256,7 +298,6 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        // Prepare DB row, omit mock ID so gen_random_uuid triggers
         const { id, ...dbRow } = newArticle;
         let { data, error } = await supabase
           .from('articles')
@@ -281,15 +322,17 @@ export const db = {
       }
     }
 
-    // Local Storage Fallback
     const articles = getLocalArticles();
     articles.unshift(newArticle);
     saveLocalArticles(articles);
     return newArticle;
   },
 
-  // Update article
+  // Update article (invalidates cache)
   async updateArticle(id: string, articleData: Partial<Article>): Promise<Article> {
+    // Clear cache immediately
+    cache.clear();
+
     if (isSupabaseConfigured && supabase) {
       try {
         let { data, error } = await supabase
@@ -317,7 +360,6 @@ export const db = {
       }
     }
 
-    // Local Storage Fallback
     const articles = getLocalArticles();
     const index = articles.findIndex(a => a.id === id);
     if (index === -1) throw new Error('Article not found');
@@ -332,8 +374,11 @@ export const db = {
     return updatedArticle;
   },
 
-  // Delete article
+  // Delete article (invalidates cache)
   async deleteArticle(id: string): Promise<boolean> {
+    // Clear cache immediately
+    cache.clear();
+
     if (isSupabaseConfigured && supabase) {
       try {
         const { error } = await supabase
@@ -347,40 +392,58 @@ export const db = {
       }
     }
 
-    // Local Storage Fallback
     const articles = getLocalArticles();
     const filtered = articles.filter(a => a.id !== id);
     saveLocalArticles(filtered);
     return true;
   },
 
-  // Increment views
+  // Increment views (quietly updates cache)
   async incrementViews(id: string): Promise<number> {
+    // We do not call cache.clear() to avoid bypass during high load, but we update the in-memory views count!
     if (isSupabaseConfigured && supabase) {
       try {
-        // Try incrementing views using Supabase RPC or read-and-write
         const { data: current } = await supabase.from('articles').select('views').eq('id', id).single();
         const nextViews = (current?.views || 0) + 1;
         await supabase.from('articles').update({ views: nextViews }).eq('id', id);
+        
+        // Quietly update our cached views count
+        if (cache.articles) {
+          const item = cache.articles.data.find(a => a.id === id);
+          if (item) item.views = nextViews;
+        }
+        
         return nextViews;
       } catch (err) {
         console.error('Supabase increment views failed:', err);
       }
     }
 
-    // Local Storage Fallback
     const articles = getLocalArticles();
     const index = articles.findIndex(a => a.id === id);
     if (index !== -1) {
       articles[index].views += 1;
       saveLocalArticles(articles);
+      
+      // Quietly update our cached views count
+      if (cache.articles) {
+        const item = cache.articles.data.find(a => a.id === id);
+        if (item) item.views = articles[index].views;
+      }
+      
       return articles[index].views;
     }
     return 0;
   },
 
-  // Get site settings
+  // Get site settings (utilizes cache)
   async getSettings(): Promise<SiteSettings> {
+    const nowTime = Date.now();
+    if (cache.settings && (nowTime - cache.settings.timestamp < CACHE_TTL)) {
+      return cache.settings.data;
+    }
+
+    let settings: SiteSettings | null = null;
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase.from('settings').select('*').limit(1).maybeSingle();
@@ -388,7 +451,7 @@ export const db = {
           const parsedPlacements = typeof data.ads_placements === 'string' 
             ? JSON.parse(data.ads_placements) 
             : data.ads_placements;
-          return {
+          settings = {
             ...DEFAULT_SETTINGS,
             ...data,
             ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements
@@ -399,17 +462,29 @@ export const db = {
       }
     }
     
-    if (typeof window === 'undefined') return DEFAULT_SETTINGS;
-    const stored = localStorage.getItem('masandigital_settings');
-    if (!stored) {
-      localStorage.setItem('masandigital_settings', JSON.stringify(DEFAULT_SETTINGS));
-      return DEFAULT_SETTINGS;
+    if (!settings) {
+      if (typeof window === 'undefined') {
+        settings = DEFAULT_SETTINGS;
+      } else {
+        const stored = localStorage.getItem('masandigital_settings');
+        if (!stored) {
+          localStorage.setItem('masandigital_settings', JSON.stringify(DEFAULT_SETTINGS));
+          settings = DEFAULT_SETTINGS;
+        } else {
+          settings = JSON.parse(stored);
+        }
+      }
     }
-    return JSON.parse(stored);
+
+    cache.settings = { data: settings, timestamp: nowTime };
+    return settings!;
   },
 
-  // Save site settings
+  // Save site settings (invalidates cache)
   async saveSettings(settings: SiteSettings): Promise<SiteSettings> {
+    // Clear cache immediately
+    cache.clear();
+
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: existing } = await supabase.from('settings').select('id').limit(1).maybeSingle();
