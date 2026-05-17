@@ -557,12 +557,15 @@ export const db = {
     // Clear cache immediately
     cache.clear();
 
+    const nowTime = Date.now();
+    const shouldBypassSupabase = isSupabaseOffline && (nowTime - supabaseOfflineTimestamp < OFFLINE_COOLDOWN);
+
     // Always synchronize with localStorage first for client state resilience
     if (typeof window !== 'undefined') {
       localStorage.setItem('masandigital_settings', JSON.stringify(settings));
     }
 
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseConfigured && supabase && !shouldBypassSupabase) {
       try {
         const { data: existing } = await supabase.from('settings').select('id').limit(1).maybeSingle();
         
@@ -599,8 +602,12 @@ export const db = {
             console.warn('First settings update failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
             const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, homepage_limit, ...fallbackPayload } = payload;
             const { error: retryError } = await supabase.from('settings').update(fallbackPayload).eq('id', existing.id);
-            if (!retryError) return settings;
+            if (!retryError) {
+              isSupabaseOffline = false; // connection works!
+              return settings;
+            }
           } else {
+            isSupabaseOffline = false; // connection works!
             return settings;
           }
         } else {
@@ -610,14 +617,22 @@ export const db = {
             console.warn('First settings insert failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
             const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, homepage_limit, ...fallbackPayload } = payload;
             const { error: retryError } = await supabase.from('settings').insert([fallbackPayload]);
-            if (!retryError) return settings;
+            if (!retryError) {
+              isSupabaseOffline = false; // connection works!
+              return settings;
+            }
           } else {
+            isSupabaseOffline = false; // connection works!
             return settings;
           }
         }
       } catch (err) {
-        console.error('Supabase settings update failed, falling back to local:', err);
+        console.error('Supabase settings update failed, activating Offline Circuit Breaker:', err);
+        isSupabaseOffline = true;
+        supabaseOfflineTimestamp = Date.now();
       }
+    } else if (shouldBypassSupabase) {
+      console.warn('[masandigital.com] Bypassing settings Supabase save - Offline Circuit Breaker active.');
     }
     
     if (typeof window !== 'undefined') {
