@@ -27,6 +27,7 @@ export interface SiteSettings {
   google_indexing_enabled?: boolean;
   google_indexing_json?: string;
   bing_api_key?: string;
+  google_site_verification?: string;
   ads_enabled: boolean;
   ads_script_code: string;
   ads_placements: {
@@ -57,6 +58,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   google_indexing_enabled: false,
   google_indexing_json: '',
   bing_api_key: '',
+  google_site_verification: '',
   ads_enabled: true,
   ads_script_code: `<div class="p-6 bg-primary/5 text-primary border border-primary/20 text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>`,
   ads_placements: {
@@ -420,6 +422,7 @@ export const db = {
           google_indexing_enabled: settings.google_indexing_enabled,
           google_indexing_json: settings.google_indexing_json,
           bing_api_key: settings.bing_api_key,
+          google_site_verification: settings.google_site_verification,
           ads_enabled: settings.ads_enabled,
           ads_script_code: settings.ads_script_code,
           ads_placements: settings.ads_placements,
@@ -441,7 +444,7 @@ export const db = {
           
           if (error) {
             console.warn('First settings update failed, retrying without site_logo, site_icon, indexing and categories columns:', error);
-            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, categories, ...fallbackPayload } = payload;
+            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, ...fallbackPayload } = payload;
             const { error: retryError } = await supabase.from('settings').update(fallbackPayload).eq('id', existing.id);
             if (!retryError) return settings;
           } else {
@@ -452,7 +455,7 @@ export const db = {
           
           if (error) {
             console.warn('First settings insert failed, retrying without site_logo, site_icon, indexing and categories columns:', error);
-            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, categories, ...fallbackPayload } = payload;
+            const { site_logo, site_icon, google_indexing_enabled, google_indexing_json, bing_api_key, google_site_verification, categories, ...fallbackPayload } = payload;
             const { error: retryError } = await supabase.from('settings').insert([fallbackPayload]);
             if (!retryError) return settings;
           } else {

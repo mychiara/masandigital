@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
     google_indexing_enabled BOOLEAN DEFAULT FALSE,
     google_indexing_json TEXT DEFAULT '',
     bing_api_key TEXT DEFAULT '',
+    google_site_verification TEXT DEFAULT '',
     ads_enabled BOOLEAN DEFAULT TRUE,
     ads_script_code TEXT,
     ads_placements JSONB DEFAULT '{"above_header": true, "below_title": true, "above_comments": true, "sidebar": true}',

@@ -68,6 +68,7 @@ export default function AdminDashboard() {
   const [googleIndexingEnabled, setGoogleIndexingEnabled] = useState(false);
   const [googleIndexingJson, setGoogleIndexingJson] = useState('');
   const [bingApiKey, setBingApiKey] = useState('');
+  const [googleSiteVerification, setGoogleSiteVerification] = useState('');
 
   const [adsEnabled, setAdsEnabled] = useState(true);
   const [adsScriptCode, setAdsScriptCode] = useState('');
@@ -454,6 +455,7 @@ export default function AdminDashboard() {
         setGoogleIndexingEnabled(settingsData.google_indexing_enabled || false);
         setGoogleIndexingJson(settingsData.google_indexing_json || '');
         setBingApiKey(settingsData.bing_api_key || '');
+        setGoogleSiteVerification(settingsData.google_site_verification || '');
         setAdsEnabled(settingsData.ads_enabled);
         setAdsScriptCode(settingsData.ads_script_code);
         setAdsPlacements(settingsData.ads_placements || {
@@ -560,6 +562,7 @@ export default function AdminDashboard() {
         google_indexing_enabled: googleIndexingEnabled,
         google_indexing_json: googleIndexingJson,
         bing_api_key: bingApiKey,
+        google_site_verification: googleSiteVerification,
         ads_enabled: adsEnabled,
         ads_script_code: adsScriptCode,
         ads_placements: adsPlacements,
@@ -2250,6 +2253,58 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
+                      {/* Google Search Console HTML Meta Tag Verification Block */}
+                      <div className="bg-surface-container-low/50 p-6 rounded-2xl border border-outline-variant/20 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 font-bold text-xs font-mono">G</div>
+                            <div>
+                              <h4 className="font-extrabold text-xs text-on-surface">Google Search Console Verification (GSC Tag)</h4>
+                              <p className="text-[10px] text-on-surface-variant/70 font-sans">Verifikasi kepemilikan domain Anda di Google Search Console menggunakan metode Tag HTML.</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider font-sans">
+                            SEO Tag
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 pt-2 border-t border-outline-variant/10">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5 font-sans">
+                            <Globe className="w-3.5 h-3.5 text-primary" />
+                            GSC Verification Code / Meta Content
+                          </label>
+                          <p className="text-[10px] text-on-surface-variant/80 font-sans leading-relaxed">
+                            Masukkan kode verifikasi HTML Tag yang diberikan oleh Google. Cukup masukkan nilai <code className="bg-surface-container-low px-1.5 py-0.5 rounded text-primary font-mono text-[9px]">content="..."</code> atau salin kode lengkapnya, kami akan memprosesnya secara otomatis!
+                          </p>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={googleSiteVerification}
+                              onChange={(e) => {
+                                // Extract content value if they paste the whole HTML tag
+                                const val = e.target.value;
+                                if (val.includes('content=')) {
+                                  const match = val.match(/content="([^"]+)"/);
+                                  if (match && match[1]) {
+                                    setGoogleSiteVerification(match[1]);
+                                    return;
+                                  }
+                                }
+                                setGoogleSiteVerification(val);
+                              }}
+                              placeholder="e.g. wR1V2xxxxxxxxxxxxxx_xxxxxxxxxxxxxxx"
+                              className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none transition-all font-mono"
+                            />
+                            <div className="absolute right-3 top-2.5 text-on-surface-variant/50 hover:text-primary cursor-pointer transition-colors p-1">
+                              <Globe className="w-4 h-4" />
+                            </div>
+                          </div>
+                          <p className="text-[9px] text-on-surface-variant/60 font-sans italic leading-normal">
+                            *Tag meta ini akan langsung dipasang di header halaman utama secara dinamis dan siap disaring oleh bot validasi Google.
+                          </p>
+                        </div>
+                      </div>
+
                       {/* Search Engines Coverage Summary */}
                       <div className="bg-yellow-500/5 p-5 rounded-2xl border border-yellow-500/10 flex gap-3 items-start animate-in fade-in slide-in-from-bottom-1 duration-200">
                         <ShieldAlert className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -2300,6 +2355,7 @@ export default function AdminDashboard() {
                                   google_indexing_enabled: googleIndexingEnabled,
                                   google_indexing_json: googleIndexingJson,
                                   bing_api_key: bingApiKey,
+                                  google_site_verification: googleSiteVerification,
                                   ads_enabled: adsEnabled,
                                   ads_script_code: adsScriptCode,
                                   ads_placements: adsPlacements,
@@ -2372,6 +2428,7 @@ export default function AdminDashboard() {
                                       setGoogleIndexingEnabled(!!parsed.google_indexing_enabled);
                                       setGoogleIndexingJson(parsed.google_indexing_json || '');
                                       setBingApiKey(parsed.bing_api_key || '');
+                                      setGoogleSiteVerification(parsed.google_site_verification || '');
                                       setAdsEnabled(parsed.ads_enabled !== false);
                                       setAdsScriptCode(parsed.ads_script_code || '');
                                       if (parsed.ads_placements) setAdsPlacements(parsed.ads_placements);
@@ -2406,6 +2463,7 @@ export default function AdminDashboard() {
                                         google_indexing_enabled: !!parsed.google_indexing_enabled,
                                         google_indexing_json: parsed.google_indexing_json,
                                         bing_api_key: parsed.bing_api_key,
+                                        google_site_verification: parsed.google_site_verification,
                                         ads_enabled: parsed.ads_enabled !== false,
                                         ads_script_code: parsed.ads_script_code,
                                         ads_placements: parsed.ads_placements || adsPlacements,
