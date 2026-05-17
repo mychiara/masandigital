@@ -194,12 +194,18 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
       <main className="pt-36 pb-16 flex-grow">
         <div className="max-w-7xl mx-auto px-6 lg:px-16">
           
-          {/* Above Header Ad Slot */}
-          {settings?.ads_enabled && settings.ads_placements.above_header && settings.ads_script_code && (
-            <div 
-              className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20"
-              dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-            />
+          {/* Above Header Ad Slot (Zero CLS Optimization) */}
+          {(!settings || (settings.ads_enabled && settings.ads_placements.above_header)) && (
+            <div className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
+              {settings?.ads_script_code ? (
+                <div 
+                  className="w-full h-full flex items-center justify-center"
+                  dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
+                />
+              ) : (
+                <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+              )}
+            </div>
           )}
           
           {/* Breadcrumbs Navigation */}
@@ -306,12 +312,18 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                 </div>
               </header>
 
-              {/* Below Title Ad Slot */}
-              {settings?.ads_enabled && settings.ads_placements.below_title && settings.ads_script_code && (
-                <div 
-                  className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20"
-                  dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-                />
+              {/* Below Title Ad Slot (Zero CLS Optimization) */}
+              {(!settings || (settings.ads_enabled && settings.ads_placements.below_title)) && (
+                <div className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
+                  {settings?.ads_script_code ? (
+                    <div 
+                      className="w-full h-full flex items-center justify-center"
+                      dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
+                    />
+                  ) : (
+                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+                  )}
+                </div>
               )}
 
               {/* Dynamic Auto Table of Contents (TOC) - Berada Sebelum Awal Article */}
@@ -452,12 +464,18 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                 </div>
               </div>
 
-              {/* Above Comments Ad Slot */}
-              {settings?.ads_enabled && settings.ads_placements.above_comments && settings.ads_script_code && (
-                <div 
-                  className="w-full min-h-[90px] mt-12 overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center"
-                  dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-                />
+              {/* Above Comments Ad Slot (Zero CLS Optimization) */}
+              {(!settings || (settings.ads_enabled && settings.ads_placements.above_comments)) && (
+                <div className="w-full min-h-[90px] mt-12 overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
+                  {settings?.ads_script_code ? (
+                    <div 
+                      className="w-full h-full flex items-center justify-center"
+                      dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
+                    />
+                  ) : (
+                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+                  )}
+                </div>
               )}
 
               {/* Interactive Comments thread */}
@@ -559,12 +577,18 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
             {/* Right Sidebar TOC */}
             <aside className="lg:col-span-4 space-y-8">
               
-              {/* Sidebar Ad Slot */}
-              {settings?.ads_enabled && settings.ads_placements.sidebar && settings.ads_script_code && (
-                <div 
-                  className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center"
-                  dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-                />
+              {/* Sidebar Ad Slot (Zero CLS Optimization) */}
+              {(!settings || (settings.ads_enabled && settings.ads_placements.sidebar)) && (
+                <div className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
+                  {settings?.ads_script_code ? (
+                    <div 
+                      className="w-full h-full flex items-center justify-center"
+                      dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
+                    />
+                  ) : (
+                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+                  )}
+                </div>
               )}
 
               {/* Share Card Widget - Mengisi Sidebar agar Tampil Sangat Premium */}

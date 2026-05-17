@@ -181,12 +181,18 @@ export default function HomePage() {
       <main className="pt-36 pb-16 flex-grow">
         <div className="max-w-7xl mx-auto px-6 lg:px-16">
           
-          {/* Above Header Ad Placement */}
-          {settings?.ads_enabled && settings.ads_placements.above_header && settings.ads_script_code && (
-            <div 
-              className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20"
-              dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-            />
+          {/* Above Header Ad Placement (Zero CLS Optimization) */}
+          {(!settings || (settings.ads_enabled && settings.ads_placements.above_header)) && (
+            <div className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
+              {settings?.ads_script_code ? (
+                <div 
+                  className="w-full h-full flex items-center justify-center"
+                  dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
+                />
+              ) : (
+                <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+              )}
+            </div>
           )}
 
           {/* Header Ad Slot / Cosmic Brand Welcome Hero */}
@@ -461,12 +467,18 @@ export default function HomePage() {
             {/* Sidebar Columns */}
             <aside className="lg:col-span-4 space-y-8">
               
-              {/* Sidebar Ad Placement */}
-              {settings?.ads_enabled && settings.ads_placements.sidebar && settings.ads_script_code && (
-                <div 
-                  className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center"
-                  dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-                />
+              {/* Sidebar Ad Placement (Zero CLS Optimization) */}
+              {(!settings || (settings.ads_enabled && settings.ads_placements.sidebar)) && (
+                <div className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
+                  {settings?.ads_script_code ? (
+                    <div 
+                      className="w-full h-full flex items-center justify-center"
+                      dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
+                    />
+                  ) : (
+                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+                  )}
+                </div>
               )}
 
               {/* Trending Posts widget */}

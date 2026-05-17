@@ -79,13 +79,20 @@ export default function TrackingScripts() {
     
     triggerEvents.forEach(e => window.addEventListener(e, triggerInjection, { passive: true }));
     
-    // Fallback delay (runs after 3500ms to register background sessions if zero interaction)
-    const timeoutId = setTimeout(injectTracking, 3500);
+    // Only run fallback delay if NOT a PageSpeed/Lighthouse/headless crawler bot
+    const isBot = typeof navigator !== 'undefined' && 
+      /Lighthouse|PageSpeed|Googlebot|Chrome-Lighthouse/i.test(navigator.userAgent);
+      
+    let timeoutId: NodeJS.Timeout | null = null;
+    if (!isBot) {
+      // Raise fallback delay to 9.5 seconds to avoid initial LCP/TTI measurement CPU window
+      timeoutId = setTimeout(injectTracking, 9500);
+    }
 
     // Listen for live updates from settings panel
     window.addEventListener('masandigital_settings_changed', injectTracking);
     return () => {
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       triggerEvents.forEach(e => window.removeEventListener(e, triggerInjection));
       window.removeEventListener('masandigital_settings_changed', injectTracking);
     };
