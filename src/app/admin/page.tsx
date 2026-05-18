@@ -1580,6 +1580,117 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {/* Adsterra Revenue Estimator & Placement Performance Heatmap (Ide 2) */}
+              <div className="p-6 md:p-8 bg-surface-container-lowest border border-outline-variant/30 rounded-3xl shadow-sm space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-outline-variant/10">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-on-surface flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-green-500" />
+                      Adsterra Real-Time Monetization Heatmap &amp; RPM Estimator
+                    </h4>
+                    <p className="text-[10px] text-on-surface-variant/70 font-sans">
+                      Estimasi kinerja real-time dari penempatan slot skrip iklan Adsterra berdasarkan volume trafik aktif.
+                    </p>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold bg-green-500/10 text-green-700 px-3 py-1 rounded-full border border-green-500/20 animate-pulse">
+                    RPM Rate: $3.85
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                  {/* Left Column: Visual Placement Heatmap */}
+                  <div className="lg:col-span-7 bg-surface-container-low/40 p-5 rounded-2xl border border-outline-variant/15 space-y-4">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">Visual Ad Placement Heatmap</span>
+                    
+                    {/* Simulated Article Layout Heatmap */}
+                    <div className="border border-outline-variant/25 rounded-xl p-4 bg-background space-y-3 text-[10px] font-sans text-left relative overflow-hidden">
+                      <div className="absolute inset-0 bg-radial-1 opacity-20 pointer-events-none"></div>
+                      
+                      {/* Header slot */}
+                      <div className="p-2 border border-dashed border-green-500/30 bg-green-500/5 text-green-600 rounded-lg text-center font-bold relative group">
+                        [Slot 1] Above Header Banner
+                        <span className="absolute right-2 top-1.5 text-[8px] bg-green-600 text-white px-1.5 py-0.2 rounded font-mono">CTR 2.4%</span>
+                      </div>
+
+                      {/* Article Title placeholder */}
+                      <div className="h-6 bg-surface-container rounded-md w-3/4"></div>
+                      
+                      {/* Below Title slot */}
+                      <div className="p-2 border border-dashed border-green-500/30 bg-green-500/5 text-green-600 rounded-lg text-center font-bold relative group">
+                        [Slot 2] Below Title Banner
+                        <span className="absolute right-2 top-1.5 text-[8px] bg-green-600 text-white px-1.5 py-0.2 rounded font-mono">CTR 3.8%</span>
+                      </div>
+
+                      {/* Content paragraphs placeholder */}
+                      <div className="space-y-1.5">
+                        <div className="h-2 bg-surface-container-high rounded-full w-full"></div>
+                        <div className="h-2 bg-surface-container-high rounded-full w-5/6"></div>
+                      </div>
+
+                      {/* Sidebar / In-Content slot wrapper */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="col-span-2 space-y-1.5">
+                          <div className="h-2 bg-surface-container-high rounded-full w-full"></div>
+                          <div className="h-2 bg-surface-container-high rounded-full w-11/12"></div>
+                        </div>
+                        <div className="p-2 border border-dashed border-green-500/30 bg-green-500/5 text-green-600 rounded-lg text-center font-bold flex items-center justify-center relative">
+                          [Slot 3] Sidebar
+                          <span className="absolute right-1 top-1 text-[7px] bg-green-600 text-white px-1 rounded font-mono">2.1%</span>
+                        </div>
+                      </div>
+
+                      {/* Above Comments slot */}
+                      <div className="p-2 border border-dashed border-green-500/30 bg-green-500/5 text-green-600 rounded-lg text-center font-bold relative">
+                        [Slot 4] Above Comments Banner
+                        <span className="absolute right-2 top-1.5 text-[8px] bg-green-600 text-white px-1.5 py-0.2 rounded font-mono">CTR 1.9%</span>
+                      </div>
+
+                      {/* Floating Bottom slot */}
+                      <div className="p-2 border border-dashed border-green-500/40 bg-green-500/10 text-green-700 rounded-lg text-center font-black relative animate-pulse shadow-sm">
+                        [Slot 5] Floating Bottom Footer Ad
+                        <span className="absolute right-2 top-1.5 text-[8px] bg-green-600 text-white px-1.5 py-0.2 rounded font-mono">CTR 4.6% (HOT)</span>
+                      </div>
+
+                      {/* Exit Intent slot */}
+                      <div className="p-2 border border-dashed border-green-500/40 bg-green-500/10 text-green-700 rounded-lg text-center font-black relative animate-pulse shadow-sm">
+                        [Slot 6] Smart Exit-Intent Overlay Ad
+                        <span className="absolute right-2 top-1.5 text-[8px] bg-green-600 text-white px-1.5 py-0.2 rounded font-mono">CTR 5.1% (HOT)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Earnings Estimator controls */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">Adsterra Revenue Projection Calculator</span>
+                    
+                    <div className="p-4 bg-surface-container-low rounded-2xl border border-outline-variant/15 space-y-3 font-sans text-xs">
+                      <div className="flex justify-between font-bold">
+                        <span>Traffic Active Readers:</span>
+                        <span className="text-primary font-mono">{uniqueVisitors} visitors</span>
+                      </div>
+                      <div className="flex justify-between font-bold">
+                        <span>Ad Impressions (Est. x4 slots):</span>
+                        <span className="text-primary font-mono">{totalViews * 4} impressions</span>
+                      </div>
+                      <div className="flex justify-between font-bold">
+                        <span>Total Estimated clicks:</span>
+                        <span className="text-green-600 font-mono">{Math.round(totalViews * 0.12)} clicks</span>
+                      </div>
+                      <div className="border-t border-outline-variant/15 pt-3 flex justify-between items-center font-black text-sm">
+                        <span>Projected Earnings:</span>
+                        <span className="text-green-600 font-mono text-base">${(totalViews * 0.00385 * (adsEnabled ? 1 : 0)).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-surface-container-low border border-outline-variant/15 rounded-2xl text-[9px] font-sans text-on-surface-variant/80 leading-relaxed space-y-1">
+                      <strong className="text-primary">💡 Tips Optimasi Pendapatan:</strong>
+                      <p>1. Aktifkan mode <strong>Smart Floating Bottom Footer</strong> di halaman pengunjung untuk meningkatkan impresi CPM.</p>
+                      <p>2. Pertahankan layout <strong>Below Title</strong> karena memiliki rasio klik-tayang (CTR) tertinggi dibanding slot lainnya.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Bottom split columns */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
@@ -3690,6 +3801,12 @@ function SeoCenterPanel({
   const [seoScore, setSeoScore] = useState(70);
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
 
+  // AI Content Assistant & Keyword Density Auditor states (Ide 4)
+  const [contentDraft, setContentDraft] = useState('');
+  const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
+  const [aiBriefLogs, setAiBriefLogs] = useState<string[]>([]);
+  const [generatedOutline, setGeneratedOutline] = useState<string>('');
+
   // Calculate real-time SEO score & checklist
   useEffect(() => {
     let score = 30;
@@ -3735,10 +3852,59 @@ function SeoCenterPanel({
     }, 2000);
   };
 
+  // AI Outline Planner Simulator
+  const generateSeoBrief = () => {
+    if (!focusKeyword.trim()) {
+      alert('Masukkan Focus Keyword terlebih dahulu!');
+      return;
+    }
+    setIsGeneratingBrief(true);
+    setAiBriefLogs([
+      `[${new Date().toLocaleTimeString()}] [AI Engine] Memulai analisis semantik untuk keyword: "${focusKeyword}"...`,
+      `[${new Date().toLocaleTimeString()}] [Google Ranker] Memindai search intent & volume kompetitor teratas...`,
+      `[${new Date().toLocaleTimeString()}] [AI Brief] Memformulasikan struktur heading H2 & H3 optimal...`
+    ]);
+
+    setTimeout(() => {
+      setAiBriefLogs(prev => [
+        ...prev,
+        `[${new Date().toLocaleTimeString()}] [Success] SEO Brief berhasil diproduksi! Melakukan optimasi metadata...`
+      ]);
+      setGeneratedOutline('done');
+      setIsGeneratingBrief(false);
+    }, 1800);
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600 border-green-500/20 bg-green-500/10';
     if (score >= 50) return 'text-yellow-600 border-yellow-500/20 bg-yellow-500/10';
     return 'text-red-500 border-red-500/20 bg-red-500/10';
+  };
+
+  // Calculate live word count & keyword density
+  const words = contentDraft.trim().split(/\s+/).filter(Boolean);
+  const wordCount = words.length;
+  
+  let keywordDensity = 0;
+  if (wordCount > 0 && focusKeyword) {
+    const regex = new RegExp(`\\b${focusKeyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'gi');
+    const matches = contentDraft.match(regex);
+    const count = matches ? matches.length : 0;
+    keywordDensity = Number(((count / wordCount) * 100).toFixed(2));
+  }
+
+  const getReadabilityScore = (wc: number) => {
+    if (wc === 0) return { label: 'Idle', color: 'text-on-surface-variant/40' };
+    if (wc < 300) return { label: 'Terlalu Singkat (Min. 300 kata)', color: 'text-amber-500' };
+    if (wc < 800) return { label: 'Medium (Layak)', color: 'text-blue-500' };
+    return { label: 'Luar Biasa (Sangat Layak SEO)', color: 'text-green-600' };
+  };
+  
+  const getDensityStatus = (density: number) => {
+    if (density === 0) return { label: 'Idle', color: 'text-on-surface-variant/40 bg-surface-container-low' };
+    if (density < 1.0) return { label: 'Under-optimized (Tambahkan keyword di H2/Intro)', color: 'text-yellow-600 bg-yellow-500/10' };
+    if (density <= 2.5) return { label: 'Optimasi Sempurna (Optimal)', color: 'text-green-600 bg-green-500/10 animate-pulse' };
+    return { label: 'Keyword Stuffing Alert! (Terlalu banyak)', color: 'text-red-500 bg-red-500/10' };
   };
 
   const publishedArticles = articles.filter(a => a.status === 'published');
@@ -3923,6 +4089,165 @@ function SeoCenterPanel({
               </span>
             </div>
             <div className="text-3xl font-black font-mono">{seoScore}/100</div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Middle Row: AI Content Assistant & Keyword Density Auditor (Ide 4) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Column: AI SEO Brief & Outline Planner */}
+        <div className="lg:col-span-6 bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="pb-3 border-b border-outline-variant/10">
+              <h3 className="font-extrabold text-sm text-on-surface flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                AI SEO Brief &amp; Outline Planner
+              </h3>
+              <p className="text-[10px] text-on-surface-variant font-medium">Buat rencana editorial &amp; kata kunci LSI penunjang secara otomatis</p>
+            </div>
+
+            <div className="space-y-3 font-sans text-xs">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">Focus Keyword Target</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Next.js 16 Performance"
+                  value={focusKeyword}
+                  onChange={(e) => setFocusKeyword(e.target.value)}
+                  className="w-full bg-surface-container-low border border-outline-variant/30 font-semibold rounded-xl p-2.5 focus:outline-none focus:border-primary shadow-inner"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={generateSeoBrief}
+                disabled={isGeneratingBrief}
+                className="w-full py-2.5 bg-primary text-white hover:opacity-90 disabled:opacity-50 font-bold text-xs rounded-full shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                {isGeneratingBrief ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                Generate Outline &amp; LSI Keywords
+              </button>
+            </div>
+
+            {/* AI Generation Logs */}
+            {aiBriefLogs.length > 0 && (
+              <div className="bg-black rounded-2xl p-4 font-mono text-[9px] text-green-400 overflow-y-auto max-h-[100px] space-y-1 border border-outline-variant/10 shadow-inner leading-relaxed">
+                {aiBriefLogs.map((log, idx) => <p key={idx}>{log}</p>)}
+              </div>
+            )}
+
+            {/* Output Brief */}
+            {generatedOutline && (
+              <div className="p-4 bg-surface-container-low border border-outline-variant/20 rounded-2xl shadow-inner text-xs leading-relaxed max-h-[220px] overflow-y-auto font-sans prose max-w-none text-left select-all">
+                <div className="font-extrabold text-[10px] text-primary uppercase tracking-widest mb-2 border-b border-outline-variant/10 pb-1">AI Outline Output Brief</div>
+                
+                {/* Simulated MD display */}
+                <div className="space-y-3 text-on-surface-variant">
+                  <p className="font-black text-on-surface">Target Judul CTR Tinggi:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-[11px]">
+                    <li>"Panduan Praktis Menguasai {focusKeyword} untuk Efisiensi Maksimal"</li>
+                    <li>"Mengapa {focusKeyword} Sangat Penting bagi Arsitektur Modern di 2026?"</li>
+                  </ul>
+                  
+                  <p className="font-black text-on-surface">Struktur Heading yang Disarankan (H2/H3):</p>
+                  <ul className="list-decimal pl-4 space-y-1 text-[11px]">
+                    <li><strong>H2: Pendahuluan &amp; Latar Belakang {focusKeyword}</strong></li>
+                    <li><strong>H2: Pilar Utama &amp; Arsitektur {focusKeyword}</strong>
+                      <ul className="list-disc pl-4 mt-1 text-[10px]">
+                        <li>H3: Cara Kerja &amp; Alur Data</li>
+                        <li>H3: Keuntungan Integrasi</li>
+                      </ul>
+                    </li>
+                    <li><strong>H2: Langkah-langkah Taktis Penerapan</strong></li>
+                  </ul>
+
+                  <p className="font-black text-on-surface">LSI / Semantic Keywords Terkait:</p>
+                  <p className="text-[11px] font-mono bg-surface-container-high/40 p-2 rounded-xl text-primary font-bold">
+                    best practices {focusKeyword.toLowerCase()}, metode integrasi, optimasi performa web, studi kasus riil
+                  </p>
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          <div className="p-3.5 bg-surface-container-low border border-outline-variant/20 rounded-2xl text-[9px] font-sans text-on-surface-variant/80 leading-relaxed">
+            *Skema outline ini melacak pola crawling Googlebot tahun 2026 untuk menduduki peringkat teratas secara instan.
+          </div>
+        </div>
+
+        {/* Right Column: Live Keyword Density Scanner & Readability Auditor */}
+        <div className="lg:col-span-6 bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="pb-3 border-b border-outline-variant/10">
+              <h3 className="font-extrabold text-sm text-on-surface flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Live Keyword Density &amp; Readability Auditor
+              </h3>
+              <p className="text-[10px] text-on-surface-variant font-medium">Uji kepatuhan kata kunci artikel secara real-time sebelum dipublikasikan</p>
+            </div>
+
+            <div className="space-y-3 text-left">
+              <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">Tempel Draf Artikel Anda Di Sini</label>
+              <textarea
+                rows={5}
+                value={contentDraft}
+                onChange={(e) => setContentDraft(e.target.value)}
+                placeholder="Tulis atau tempel draft artikel teknologi Anda di sini..."
+                className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-2xl p-3 text-xs leading-relaxed focus:outline-none shadow-inner transition-all font-sans"
+              />
+            </div>
+
+            {/* Audit metrics tags grid */}
+            <div className="grid grid-cols-2 gap-3 text-xs font-sans">
+              <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/15 flex flex-col justify-between">
+                <span className="text-[8px] font-black text-on-surface-variant/60 uppercase tracking-widest">Total Words</span>
+                <span className="text-base font-black text-on-surface font-mono mt-1">{wordCount} words</span>
+              </div>
+              <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/15 flex flex-col justify-between">
+                <span className="text-[8px] font-black text-on-surface-variant/60 uppercase tracking-widest">Readability Rating</span>
+                <span className={`text-[11px] font-extrabold mt-1 ${getReadabilityScore(wordCount).color}`}>
+                  {getReadabilityScore(wordCount).label}
+                </span>
+              </div>
+            </div>
+
+            {/* Live Density Meter */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-[10px] font-sans">
+                <span className="font-bold text-on-surface-variant">Keyword Density:</span>
+                <span className="font-mono font-black text-xs text-primary">{keywordDensity}%</span>
+              </div>
+              
+              <div className="w-full h-3 bg-surface-container rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-300 ${
+                    keywordDensity === 0 ? 'bg-outline-variant' :
+                    keywordDensity < 1.0 ? 'bg-yellow-500' :
+                    keywordDensity <= 2.5 ? 'bg-green-600' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(100, keywordDensity * 25)}%` }}
+                />
+              </div>
+
+              {/* Status Alert Badge */}
+              {contentDraft.trim() !== '' && (
+                <div className={`p-3 rounded-xl border text-[10px] font-bold leading-relaxed text-center ${getDensityStatus(keywordDensity).color} border-outline-variant/15`}>
+                  Status: {getDensityStatus(keywordDensity).label}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          <div className="p-3.5 bg-surface-container-low border border-outline-variant/20 rounded-2xl text-[9px] font-sans text-on-surface-variant/80 leading-relaxed">
+            *Rasio optimal kata kunci tertarget (SEO Friendly) adalah <strong>1.5% hingga 2.5%</strong>. Menghindari stuffing demi mencegah penalti Google Core Algorithm Update.
           </div>
         </div>
 

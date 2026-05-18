@@ -21,7 +21,13 @@ import {
   ArrowLeft,
   BookOpen,
   ShieldAlert,
-  Loader2
+  Loader2,
+  Palette,
+  Sun,
+  Moon,
+  Sparkles,
+  X,
+  Flame
 } from 'lucide-react';
 
 interface Comment {
@@ -47,13 +53,59 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  // Load site settings on mount
+  // Theme Personalization Engine State
+  const [showThemeDrawer, setShowThemeDrawer] = useState(false);
+  const [currentMode, setCurrentMode] = useState('light');
+  const [currentScheme, setCurrentScheme] = useState('blue');
+
+  // Smart Exit-Intent State
+  const [showExitIntent, setShowExitIntent] = useState(false);
+  
+  // Smart Floating Ad Banner State
+  const [showBottomAd, setShowBottomAd] = useState(false);
+  const [isBottomAdDismissed, setIsBottomAdDismissed] = useState(false);
+
+  // Load site settings and persist theme on mount
   useEffect(() => {
     async function loadSettings() {
       const s = await db.getSettings();
       setSettings(s);
     }
     loadSettings();
+
+    // Persist visual theme from local storage
+    const savedMode = localStorage.getItem('theme_mode') || 'light';
+    const savedScheme = localStorage.getItem('theme_scheme') || 'blue';
+    setCurrentMode(savedMode);
+    setCurrentScheme(savedScheme);
+    document.documentElement.setAttribute('data-mode', savedMode);
+    document.documentElement.setAttribute('data-color-scheme', savedScheme);
+  }, []);
+
+  // Theme changing trigger
+  const changeTheme = (mode: string, scheme: string) => {
+    setCurrentMode(mode);
+    setCurrentScheme(scheme);
+    localStorage.setItem('theme_mode', mode);
+    localStorage.setItem('theme_scheme', scheme);
+    document.documentElement.setAttribute('data-mode', mode);
+    document.documentElement.setAttribute('data-color-scheme', scheme);
+  };
+
+  // Exit-Intent Mouse Movement Listener
+  useEffect(() => {
+    const handleMouseLeave = (e: MouseEvent) => {
+      // Triggers if mouse leaves viewport from top (attempting to close tab)
+      if (e.clientY < 20) {
+        const hasShown = sessionStorage.getItem('exit_intent_ad_shown');
+        if (!hasShown) {
+          setShowExitIntent(true);
+          sessionStorage.setItem('exit_intent_ad_shown', 'true');
+        }
+      }
+    };
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => document.removeEventListener('mouseleave', handleMouseLeave);
   }, []);
 
   // Fetch other published articles to find next articles to load
@@ -105,18 +157,25 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     }
   };
 
-  // Scroll Progress Bar Tracker
+  // Scroll Progress Bar Tracker & Smart Floating Bottom Ad trigger
   useEffect(() => {
     const handleScroll = () => {
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (totalHeight > 0) {
         const progress = (window.scrollY / totalHeight) * 100;
         setScrollProgress(progress);
+
+        // Show floating bottom ad banner after scrolling past 25% of page
+        if (progress > 25 && !isBottomAdDismissed) {
+          setShowBottomAd(true);
+        } else {
+          setShowBottomAd(false);
+        }
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isBottomAdDismissed]);
 
   // IntersectionObserver for auto loading next article
   useEffect(() => {
@@ -210,14 +269,14 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
             
-            {/* Left Sidebar Share Drawers */}
+            {/* Left Sidebar Share Drawers & Theme Selector Button */}
             <div className="hidden xl:flex flex-col gap-4 sticky top-28 h-fit col-span-1 -ml-16">
               <button 
                 onClick={() => {
                   navigator.clipboard.writeText(window.location.href);
                   alert('Link copied to clipboard!');
                 }} 
-                className="w-12 h-12 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+                className="w-12 h-12 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center hover:bg-primary hover:text-white transition-colors cursor-pointer shadow-md"
                 title="Share Article"
               >
                 <Share2 className="w-4 h-4" />
@@ -226,16 +285,19 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                 onClick={() => {
                   alert('Thank you for liking this article!');
                 }} 
-                className="w-12 h-12 rounded-full border border-outline-variant/30 flex items-center justify-center transition-colors bg-surface-container-low hover:bg-primary hover:text-white"
+                className="w-12 h-12 rounded-full border border-outline-variant/30 flex items-center justify-center transition-colors bg-surface-container-low hover:bg-primary hover:text-white cursor-pointer shadow-md"
                 title="Like Article"
               >
                 <ThumbsUp className="w-4 h-4" />
               </button>
+              
+              {/* Premium Floating Theme Control Button */}
               <button 
-                className="w-12 h-12 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-                title="Bookmark"
+                onClick={() => setShowThemeDrawer(true)} 
+                className="w-12 h-12 rounded-full border border-primary/20 flex items-center justify-center transition-all bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer shadow-lg animate-pulse"
+                title="Personalize Theme"
               >
-                <Bookmark className="w-4 h-4" />
+                <Palette className="w-4 h-4" />
               </button>
             </div>
 
@@ -323,6 +385,298 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
           </div>
         </div>
       </main>
+
+      {/* ==========================================
+          THEME PERSONALIZATION SLIDE-OUT DRAWER (Ide 1)
+          ========================================== */}
+      {showThemeDrawer && (
+        <div className="fixed inset-0 z-150 flex justify-end font-sans">
+          {/* Glassmorphic Backdrop */}
+          <div 
+            onClick={() => setShowThemeDrawer(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+          />
+
+          {/* Drawer Body */}
+          <div className="relative w-80 max-w-full h-full bg-surface-container border-l border-outline-variant/30 p-6 shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-right duration-300">
+            <div className="space-y-6">
+              
+              {/* Drawer Header */}
+              <div className="flex justify-between items-center pb-4 border-b border-outline-variant/15">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-primary animate-bounce-slow" />
+                  <div>
+                    <h3 className="font-extrabold text-sm text-on-surface">Personalize Theme</h3>
+                    <p className="text-[9px] text-on-surface-variant font-medium">Custom visual styles and layouts</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowThemeDrawer(false)}
+                  className="w-8 h-8 rounded-full border border-outline-variant/30 flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4 text-on-surface" />
+                </button>
+              </div>
+
+              {/* Theme Schemes Options List */}
+              <div className="space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant">Pilih Model &amp; Warna Tema</label>
+                
+                <div className="space-y-3">
+                  {/* Theme Option 1: Nordic Sapphire (Default Light) */}
+                  <button
+                    onClick={() => changeTheme('light', 'blue')}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left cursor-pointer ${
+                      currentMode === 'light' && currentScheme === 'blue'
+                        ? 'bg-primary/10 border-primary shadow-sm scale-102'
+                        : 'bg-surface hover:bg-surface-container-high border-outline-variant/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                        <Sun className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs block text-on-surface">Nordic Sapphire</span>
+                        <span className="text-[9px] text-on-surface-variant font-semibold">Cerah, bersih &amp; kontras tinggi</span>
+                      </div>
+                    </div>
+                    {currentMode === 'light' && currentScheme === 'blue' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    )}
+                  </button>
+
+                  {/* Theme Option 2: Obsidian Dark */}
+                  <button
+                    onClick={() => changeTheme('dark', 'blue')}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left cursor-pointer ${
+                      currentMode === 'dark' && currentScheme === 'blue'
+                        ? 'bg-primary/10 border-primary shadow-sm scale-102'
+                        : 'bg-surface hover:bg-surface-container-high border-outline-variant/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white border border-slate-700">
+                        <Moon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs block text-on-surface">Obsidian Dark</span>
+                        <span className="text-[9px] text-on-surface-variant font-semibold">OLED Pitch Black, hemat daya</span>
+                      </div>
+                    </div>
+                    {currentMode === 'dark' && currentScheme === 'blue' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    )}
+                  </button>
+
+                  {/* Theme Option 3: Cyberpunk Neon */}
+                  <button
+                    onClick={() => changeTheme('dark', 'purple')}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left cursor-pointer ${
+                      currentMode === 'dark' && currentScheme === 'purple'
+                        ? 'bg-purple-900/20 border-purple-500 shadow-sm scale-102'
+                        : 'bg-surface hover:bg-surface-container-high border-outline-variant/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs block text-on-surface text-purple-700 dark:text-purple-400">Cyberpunk Neon</span>
+                        <span className="text-[9px] text-on-surface-variant font-semibold">Aksen ungu &amp; cyan futuristik</span>
+                      </div>
+                    </div>
+                    {currentMode === 'dark' && currentScheme === 'purple' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse" />
+                    )}
+                  </button>
+
+                  {/* Theme Option 4: Emerald Glass */}
+                  <button
+                    onClick={() => changeTheme('dark', 'green')}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left cursor-pointer ${
+                      currentMode === 'dark' && currentScheme === 'green'
+                        ? 'bg-emerald-950/20 border-emerald-500 shadow-sm scale-102'
+                        : 'bg-surface hover:bg-surface-container-high border-outline-variant/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white">
+                        <Flame className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs block text-on-surface text-emerald-700 dark:text-emerald-400">Emerald Glass</span>
+                        <span className="text-[9px] text-on-surface-variant font-semibold">Glow hijau zamrud mewah</span>
+                      </div>
+                    </div>
+                    {currentMode === 'dark' && currentScheme === 'green' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    )}
+                  </button>
+
+                  {/* Theme Option 5: Sunset Amber */}
+                  <button
+                    onClick={() => changeTheme('light', 'orange')}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left cursor-pointer ${
+                      currentMode === 'light' && currentScheme === 'orange'
+                        ? 'bg-orange-900/10 border-orange-500 shadow-sm scale-102'
+                        : 'bg-surface hover:bg-surface-container-high border-outline-variant/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                        <Sun className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs block text-on-surface">Sunset Amber</span>
+                        <span className="text-[9px] text-on-surface-variant font-semibold">Warna oranye hangat bersahaja</span>
+                      </div>
+                    </div>
+                    {currentMode === 'light' && currentScheme === 'orange' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                    )}
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Drawer Footer Notice */}
+            <div className="border-t border-outline-variant/15 pt-4 text-center">
+              <p className="text-[9px] text-on-surface-variant/70 leading-relaxed font-semibold">
+                Didesain secara khusus menggunakan dynamic CSS variables agar super-fast loading &amp; 100% SEO Friendly.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          SMART BOTTOM FLOATING AD BANNER (Ide 3)
+          ========================================== */}
+      {showBottomAd && !isBottomAdDismissed && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-100 w-full max-w-lg px-4 font-sans animate-in slide-in-from-bottom duration-500">
+          <div className="glassmorphism border border-primary/30 p-4 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col items-center">
+            
+            {/* Banner Floating Title */}
+            <div className="flex justify-between items-center w-full mb-2 pb-1 border-b border-outline-variant/15">
+              <span className="text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-primary animate-pulse" />
+                Mas Andy Premium Ad Offer
+              </span>
+              <button 
+                onClick={() => {
+                  setIsBottomAdDismissed(true);
+                  setShowBottomAd(false);
+                }}
+                className="w-5 h-5 rounded-full bg-surface-container-high border border-outline-variant/30 flex items-center justify-center text-[10px] font-bold text-on-surface hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                title="Tutup Iklan"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Smart Banner Ad Slot */}
+            {settings?.ads_script_code ? (
+              <AdSlot html={settings.ads_script_code} placement="floating_footer" />
+            ) : (
+              <div className="w-full bg-primary/5 text-primary text-[10px] font-bold text-center p-4 rounded-2xl uppercase tracking-wider">
+                [masandigital.com Premium Bottom AdSlot Banner]
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          SMART EXIT-INTENT MODAL OVERLAY (Ide 3)
+          ========================================== */}
+      {showExitIntent && (
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-6 font-sans">
+          {/* Backdrop Blur */}
+          <div 
+            onClick={() => setShowExitIntent(false)}
+            className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity"
+          />
+
+          {/* Modal Container */}
+          <div className="relative w-full max-w-xl bg-surface-container border border-primary/25 rounded-3xl p-6 md:p-8 shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowExitIntent(false)}
+              className="absolute right-4 top-4 w-8 h-8 rounded-full border border-outline-variant/30 flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4 text-on-surface" />
+            </button>
+
+            {/* Header info */}
+            <div className="text-center space-y-2 mb-6">
+              <span className="inline-block bg-primary/10 text-primary border border-primary/20 font-black text-[9px] uppercase px-3 py-1 rounded-full tracking-widest animate-pulse">
+                Tunggu Sebentar, Pembaca Setia!
+              </span>
+              <h3 className="font-extrabold text-lg md:text-xl text-on-surface tracking-tight">
+                Sebelum Anda Pergi, Jangan Lewatkan Insights Ini!
+              </h3>
+              <p className="text-xs text-on-surface-variant max-w-md mx-auto leading-relaxed">
+                Platform kami mendeteksi Anda ingin meninggalkan halaman. Temukan alat interaktif premium kami untuk membantu karir teknologi Anda!
+              </p>
+            </div>
+
+            {/* Interactive recommendation option */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 hover:border-primary/30 transition-all text-left">
+                <span className="text-[8px] font-black text-primary uppercase tracking-wider block mb-1">Interactive Tool #1</span>
+                <h4 className="font-extrabold text-xs text-on-surface block mb-1.5">Kalkulator Gaji IT Indonesia</h4>
+                <p className="text-[10px] text-on-surface-variant leading-relaxed mb-3">Simulasi standar kelayakan gaji IT berdasarkan pengalaman &amp; keahlian Anda.</p>
+                <Link 
+                  href="/tools" 
+                  onClick={() => setShowExitIntent(false)}
+                  className="inline-block bg-primary text-white text-[10px] font-bold px-4 py-2 rounded-full shadow-sm hover:opacity-90 transition-opacity"
+                >
+                  Hitung Gaji Sekarang
+                </Link>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 hover:border-primary/30 transition-all text-left">
+                <span className="text-[8px] font-black text-secondary uppercase tracking-wider block mb-1">Interactive Tool #2</span>
+                <h4 className="font-extrabold text-xs text-on-surface block mb-1.5">Cloud Cost Estimator</h4>
+                <p className="text-[10px] text-on-surface-variant leading-relaxed mb-3">Bandingkan efisiensi biaya server Anda (VPS vs AWS vs Azure) secara real-time.</p>
+                <Link 
+                  href="/tools" 
+                  onClick={() => setShowExitIntent(false)}
+                  className="inline-block bg-secondary text-white text-[10px] font-bold px-4 py-2 rounded-full shadow-sm hover:opacity-90 transition-opacity"
+                >
+                  Bandingkan Server
+                </Link>
+              </div>
+            </div>
+
+            {/* Smart High-CTR Exit Intent Ad Banner */}
+            <div className="w-full min-h-[90px] p-3 rounded-2xl border border-outline-variant/20 bg-surface-container-low flex flex-col items-center justify-center overflow-hidden">
+              <span className="text-[7px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Sponsored Advertisement</span>
+              {settings?.ads_script_code ? (
+                <AdSlot html={settings.ads_script_code} placement="exit_intent" />
+              ) : (
+                <div className="w-full bg-primary/5 text-primary text-[9px] font-bold text-center py-4 rounded-xl uppercase tracking-widest">[masandigital.com Premium Exit AdSlot Banner]</div>
+              )}
+            </div>
+
+            {/* Bottom button */}
+            <div className="text-center mt-6">
+              <button 
+                onClick={() => setShowExitIntent(false)}
+                className="text-[10px] font-bold text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+              >
+                Tetap Lanjut Membaca Artikel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
