@@ -53,6 +53,60 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const loaderRef = useRef<HTMLDivElement>(null);
 
+  const [visibleArticleId, setVisibleArticleId] = useState(initialArticle.id);
+  const [activeHeadingId, setActiveHeadingId] = useState('');
+
+  // H2 Heading scroll tracking (Scrollspy)
+  useEffect(() => {
+    const handleScrollSpy = () => {
+      const headings = Array.from(document.querySelectorAll(`[id^="heading-${visibleArticleId}-"]`));
+      
+      let currentActive = '';
+      for (const heading of headings) {
+        const rect = heading.getBoundingClientRect();
+        if (rect.top <= 140) {
+          currentActive = heading.id;
+        } else {
+          break;
+        }
+      }
+      
+      if (currentActive) {
+        setActiveHeadingId(currentActive);
+      } else if (headings.length > 0) {
+        setActiveHeadingId(headings[0].id);
+      }
+    };
+
+    window.addEventListener('scroll', handleScrollSpy, { passive: true });
+    handleScrollSpy();
+
+    return () => window.removeEventListener('scroll', handleScrollSpy);
+  }, [visibleArticleId]);
+
+  // Extract visible article ToC items dynamically
+  const visibleArticle = articlesList.find(a => a.id === visibleArticleId) || initialArticle;
+  const isHtmlVisible = /<[a-z][\s\S]*>/i.test(visibleArticle.content);
+  const visibleTocItems: { id: string; label: string }[] = [];
+
+  if (isHtmlVisible) {
+    const h2Regex = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+    let match;
+    let idx = 0;
+    while ((match = h2Regex.exec(visibleArticle.content)) !== null) {
+      const label = match[1].replace(/<[^>]*>/g, '').trim();
+      visibleTocItems.push({ id: `heading-${visibleArticle.id}-${idx}`, label });
+      idx++;
+    }
+  } else {
+    visibleTocItems.push(
+      { id: `sec-intro-${visibleArticle.id}`, label: 'Introduction' },
+      { id: `sec-arch-${visibleArticle.id}`, label: 'Architecting for Hyper-Speed' },
+      { id: `sec-trust-${visibleArticle.id}`, label: 'Digital Trust Protocols' },
+      { id: `sec-future-${visibleArticle.id}`, label: 'Future Editorial Outlook' }
+    );
+  }
+
   // Theme Personalization Engine State
   const [showThemeDrawer, setShowThemeDrawer] = useState(false);
   const [currentMode, setCurrentMode] = useState('light');
@@ -202,7 +256,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     };
   }, [hasMore, allArticles, articlesList, loadingNext]);
 
-  // IntersectionObserver for Virtual URL Routing & Document Title update
+  // IntersectionObserver for Virtual URL Routing, Document Title update & Active TOC Tracking
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -210,9 +264,13 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
           if (entry.isIntersecting) {
             const slug = entry.target.getAttribute('data-slug');
             const title = entry.target.getAttribute('data-title');
+            const id = entry.target.getAttribute('data-id');
             if (slug && title) {
               window.history.replaceState(null, '', `/article/${slug}`);
               document.title = `${title} | ${settings?.site_title || 'masandigital.com'}`;
+            }
+            if (id) {
+              setVisibleArticleId(id);
             }
           }
         });
@@ -308,6 +366,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                   key={art.id} 
                   data-slug={art.slug} 
                   data-title={art.title} 
+                  data-id={art.id}
                   className="article-block-container"
                 >
                   <ArticleBlock 
@@ -347,38 +406,84 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                 </div>
               )}
 
-              {/* Share Card Widget */}
-              <div className="p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md space-y-4 sticky top-28">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/5 opacity-30 rounded-3xl pointer-events-none"></div>
-                <div className="relative z-10 space-y-3">
-                  <h4 className="font-black text-xs uppercase tracking-wider text-on-surface flex items-center gap-1.5 font-sans">
-                    <Share2 className="w-3.5 h-3.5 text-secondary animate-pulse" />
-                    Share Insights
-                  </h4>
-                  <p className="text-[11px] text-on-surface-variant leading-relaxed font-sans">
-                    Spread these expert technical summaries and analytical frameworks with your global network.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(activeArticle.title)}`, '_blank');
-                      }}
-                      className="flex items-center justify-center gap-1.5 bg-black hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
-                    >
-                      X / Twitter
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`, '_blank');
-                      }}
-                      className="flex items-center justify-center gap-1.5 bg-blue-700 hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
-                    >
-                      LinkedIn
-                    </button>
+              {/* Sticky Sidebar Container */}
+              <div className="sticky top-28 space-y-6">
+                
+                {/* Dynamic Floating Scrollspy Table of Contents */}
+                {visibleTocItems.length > 0 && (
+                  <div className="p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md space-y-4 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/5 opacity-20 rounded-3xl pointer-events-none"></div>
+                    <div className="relative z-10 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-outline-variant/15">
+                        <h4 className="font-black text-xs uppercase tracking-wider text-on-surface flex items-center gap-1.5 font-sans">
+                          <BookOpen className="w-3.5 h-3.5 text-primary animate-pulse" />
+                          Table of Contents
+                        </h4>
+                        <span className="text-[9px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          {visibleArticle.reading_time} min read
+                        </span>
+                      </div>
+
+                      <ul className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar font-sans text-xs font-bold text-on-surface-variant">
+                        {visibleTocItems.map((item) => {
+                          const isActive = activeHeadingId === item.id;
+                          return (
+                            <li key={item.id}>
+                              <a
+                                href={`#${item.id}`}
+                                className={`flex items-center gap-2 pl-3 border-l-2 transition-all duration-300 py-1 ${
+                                  isActive
+                                    ? 'border-primary text-primary translate-x-1 font-extrabold'
+                                    : 'border-outline-variant/30 hover:border-primary/50 hover:text-primary hover:translate-x-0.5'
+                                }`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                  isActive ? 'bg-primary scale-125' : 'bg-on-surface-variant/40'
+                                }`} />
+                                <span className="truncate">{item.label}</span>
+                              </a>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Share Card Widget */}
+                <div className="p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md space-y-4 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/5 opacity-30 rounded-3xl pointer-events-none"></div>
+                  <div className="relative z-10 space-y-3">
+                    <h4 className="font-black text-xs uppercase tracking-wider text-on-surface flex items-center gap-1.5 font-sans">
+                      <Share2 className="w-3.5 h-3.5 text-secondary animate-pulse" />
+                      Share Insights
+                    </h4>
+                    <p className="text-[11px] text-on-surface-variant leading-relaxed font-sans">
+                      Spread these expert technical summaries and analytical frameworks with your global network.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(activeArticle.title)}`, '_blank');
+                        }}
+                        className="flex items-center justify-center gap-1.5 bg-black hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
+                      >
+                        X / Twitter
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`, '_blank');
+                        }}
+                        className="flex items-center justify-center gap-1.5 bg-blue-700 hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
+                      >
+                        LinkedIn
+                      </button>
+                    </div>
                   </div>
                 </div>
+
               </div>
             </aside>
 

@@ -56,6 +56,70 @@ function EditorForm() {
   // AI and SEO State variables
   const [aiAction, setAiAction] = useState<'excerpt' | 'keywords' | 'rewrite'>('excerpt');
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        const MAX_WIDTH = 1200;
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const webpDataUrl = canvas.toDataURL('image/webp', 0.82);
+          setCoverImage(webpDataUrl);
+          alert('🖼️ SUKSES!\nGambar telah berhasil dikompres dan dikonversi ke format Next-Gen WebP!');
+        }
+        setIsUploading(false);
+      };
+      img.onerror = () => {
+        alert('Gagal memproses file gambar.');
+        setIsUploading(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerAutoPingAndIndexNow = async (articleSlug: string) => {
+    try {
+      const url = `https://masandigital.com/article/${articleSlug}`;
+      const googlePing = fetch(`https://www.google.com/ping?sitemap=https://masandigital.com/sitemap.xml`, { mode: 'no-cors' });
+      const indexNowPing = fetch(`https://api.indexnow.org/IndexNow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify({
+          host: 'masandigital.com',
+          key: 'f565b93d39504505bf77df4c74070a25',
+          keyLocation: 'https://masandigital.com/f565b93d39504505bf77df4c74070a25.txt',
+          urlList: [url]
+        })
+      });
+      await Promise.allSettled([googlePing, indexNowPing]);
+      console.log('IndexNow and Sitemap Pings fired for:', url);
+    } catch (err) {
+      console.error('Failed to trigger IndexNow / Google sitemap ping:', err);
+    }
+  };
 
   // Dynamic SEO Score calculation
   const calculateSeoScore = () => {
@@ -197,9 +261,20 @@ function EditorForm() {
       if (id) {
         await db.updateArticle(id, payload);
         setSuccess('Article successfully updated!');
+        if (payload.status === 'published') {
+          triggerAutoPingAndIndexNow(payload.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+        }
       } else {
         await db.createArticle(payload);
         setSuccess('Article successfully created and published!');
+        if (payload.status === 'published') {
+          const generatedSlug = title.toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          triggerAutoPingAndIndexNow(generatedSlug);
+        }
       }
 
       setTimeout(() => {
@@ -366,17 +441,37 @@ function EditorForm() {
             <div className="space-y-1">
               <label className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1">
                 <Image className="w-3.5 h-3.5 text-primary" />
-                Cover Image URL
+                Cover Image URL / Foto Cover
               </label>
-              <input
-                type="url"
-                placeholder="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop"
-                value={coverImage}
-                onChange={(e) => setCoverImage(e.target.value)}
-                className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none transition-all"
-              />
+              <div className="flex gap-2.5">
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop"
+                  value={coverImage}
+                  onChange={(e) => setCoverImage(e.target.value)}
+                  className="flex-grow bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none transition-all font-mono"
+                />
+                <label
+                  htmlFor="cover-file-upload"
+                  className={`flex items-center justify-center gap-1.5 px-4 rounded-xl text-xs font-bold text-white bg-primary hover:opacity-95 shadow-md cursor-pointer transition-all whitespace-nowrap ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  {isUploading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  Upload &amp; WebP Compress
+                </label>
+                <input
+                  type="file"
+                  id="cover-file-upload"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+              </div>
               <span className="text-[10px] text-on-surface-variant/70 block mt-1">
-                Leave blank to automatically apply a premium tech image placeholder.
+                Masukkan URL gambar atau klik tombol untuk mengunggah dan mengompres file gambar secara instan ke format Next-Gen WebP.
               </span>
             </div>
 
