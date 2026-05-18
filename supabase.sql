@@ -111,3 +111,43 @@ CREATE POLICY "Allow public read access to settings" ON public.settings
 -- Allow ONLY authenticated users full control over settings
 CREATE POLICY "Allow authenticated users full access to settings" ON public.settings
     FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- =========================================================================
+-- AUTOMATIC STORAGE BUCKETS & POLICIES SETUP
+-- =========================================================================
+
+-- Create 'avatars' public bucket if not exists
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'avatars', 
+    'avatars', 
+    true, 
+    5242880, -- 5MB limit
+    ARRAY['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create 'uploads' public bucket if not exists
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'uploads', 
+    'uploads', 
+    true, 
+    10485760, -- 10MB limit
+    ARRAY['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Drop storage policies if they exist first to avoid conflict on re-runs
+DROP POLICY IF EXISTS "Allow public read access on storage objects" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users full access to avatars and uploads" ON storage.objects;
+
+-- Allow public read access to storage objects
+CREATE POLICY "Allow public read access on storage objects" ON storage.objects
+    FOR SELECT USING (true);
+
+-- Allow authenticated users to perform all actions inside the avatars and uploads buckets
+CREATE POLICY "Allow authenticated users full access to avatars and uploads" ON storage.objects
+    FOR ALL TO authenticated USING (bucket_id IN ('avatars', 'uploads')) WITH CHECK (bucket_id IN ('avatars', 'uploads'));
+
+
