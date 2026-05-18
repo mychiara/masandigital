@@ -69,50 +69,61 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
 
   return (
     <header className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 glassmorphism rounded-2xl shadow-xl shadow-black/30 transition-all duration-300">
-      <div className="px-6 lg:px-8 flex justify-between items-center h-24">
+      {/* Hide Scrollbars for Categories horizontal scroll */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+      `}} />
+
+      <div className="px-6 lg:px-8 flex justify-between items-center h-24 gap-4">
         
         {/* Brand Logo */}
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center">
-            {siteLogo ? (
-              <div className="relative h-10 w-52">
-                <Image
-                  src={siteLogo}
-                  alt={siteTitle}
-                  fill
-                  sizes="176px"
-                  className="object-contain object-left"
-                />
-              </div>
-            ) : (
-              <span className="font-extrabold text-2xl tracking-tighter brand-gradient-text hover:opacity-95 transition-opacity">
-                {siteTitle}
-              </span>
-            )}
-          </Link>
- 
-          {/* Desktop Navigation */}
-          {onCategoryChange && (
-            <nav className="hidden md:flex gap-6 items-center">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => onCategoryChange(cat)}
-                  className={`font-bold text-xs uppercase tracking-wider transition-all duration-200 ease-in-out border-b-2 pb-1 cursor-pointer ${
-                    (activeCategory || 'All') === cat
-                      ? 'text-primary border-primary shadow-sm shadow-primary/10'
-                      : 'text-on-surface-variant/80 border-transparent hover:text-primary hover:border-primary/50'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </nav>
+        <Link href="/" className="flex items-center shrink-0">
+          {siteLogo ? (
+            <div className="relative h-10 w-52">
+              <Image
+                src={siteLogo}
+                alt={siteTitle}
+                fill
+                sizes="176px"
+                className="object-contain object-left"
+              />
+            </div>
+          ) : (
+            <span className="font-extrabold text-2xl tracking-tighter brand-gradient-text hover:opacity-95 transition-opacity">
+              {siteTitle}
+            </span>
           )}
-        </div>
+        </Link>
+ 
+        {/* Desktop Navigation (Flexible Center Categories Row) */}
+        {onCategoryChange && (
+          <nav 
+            className="hidden md:flex gap-6 items-center overflow-x-auto scrollbar-none flex-1 max-w-[45%] lg:max-w-[55%] py-2 px-1 justify-start md:justify-center"
+            style={{
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => onCategoryChange(cat)}
+                className={`font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-200 ease-in-out border-b-2 pb-1 cursor-pointer shrink-0 ${
+                  (activeCategory || 'All') === cat
+                    ? 'text-primary border-primary shadow-sm shadow-primary/10'
+                    : 'text-on-surface-variant/80 border-transparent hover:text-primary hover:border-primary/50'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </nav>
+        )}
  
         {/* Search & Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 shrink-0">
           {onSearchChange && (
             <div className="relative flex items-center">
               {showSearch ? (
@@ -125,7 +136,7 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
                     setSearchVal(e.target.value);
                     onSearchChange(e.target.value);
                   }}
-                  className="bg-surface-container-low border border-outline-variant/30 text-on-surface px-4 py-1.5 rounded-full text-xs w-44 md:w-56 focus:outline-none focus:border-primary transition-all shadow-inner"
+                  className="bg-surface-container-low border border-outline-variant/30 text-on-surface px-4 py-1.5 rounded-full text-xs w-36 lg:w-48 focus:outline-none focus:border-primary transition-all shadow-inner"
                   autoFocus
                 />
               ) : null}
@@ -142,26 +153,26 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
           )}
  
           {/* User Session Action Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2.5">
             {user ? (
               <>
                 <Link
                   href="/admin"
-                  className="flex items-center gap-1.5 bg-gradient-to-r from-primary via-secondary to-tertiary text-white hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg shadow-primary/20 transition-all duration-300"
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-primary via-secondary to-tertiary text-white hover:scale-105 active:scale-95 px-4.5 py-2.5 rounded-full font-bold text-xs shadow-lg shadow-primary/20 transition-all duration-300 whitespace-nowrap"
                 >
                   <Sparkles className="w-3.5 h-3.5 animate-spin-slow" />
-                  Create &amp; Generate Post
+                  Write Post
                 </Link>
                 <Link
                   href="/admin"
-                  className="flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2.5 rounded-full font-bold text-xs transition-all border border-primary/20"
+                  className="flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2.5 rounded-full font-bold text-xs transition-all border border-primary/20 whitespace-nowrap"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  Editor Dashboard
+                  Dashboard
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 bg-surface-container-high hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-full font-bold text-xs text-on-surface-variant transition-all cursor-pointer border border-outline-variant/20"
+                  className="flex items-center gap-1.5 bg-surface-container-high hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-full font-bold text-xs text-on-surface-variant transition-all cursor-pointer border border-outline-variant/20 whitespace-nowrap"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Logout
@@ -170,10 +181,10 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-1.5 bg-gradient-to-r from-primary via-secondary to-tertiary text-white hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg shadow-primary/20 transition-all duration-300"
+                className="flex items-center gap-1.5 bg-gradient-to-r from-primary via-secondary to-tertiary text-white hover:scale-105 active:scale-95 px-5 py-2.5 rounded-full font-bold text-xs shadow-lg shadow-primary/20 transition-all duration-300 whitespace-nowrap"
               >
                 <Sparkles className="w-3.5 h-3.5 animate-spin-slow" />
-                Create &amp; Generate Post
+                Write Post
               </Link>
             )}
           </div>
