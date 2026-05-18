@@ -20,7 +20,8 @@ import {
   Send,
   ArrowLeft,
   BookOpen,
-  ShieldAlert
+  ShieldAlert,
+  Loader2
 } from 'lucide-react';
 
 interface Comment {
@@ -37,10 +38,15 @@ interface ArticleClientProps {
 }
 
 export default function ArticleClient({ initialArticle }: ArticleClientProps) {
-  const [article, setArticle] = useState<Article>(initialArticle);
+  const [articlesList, setArticlesList] = useState<Article[]>([initialArticle]);
+  const [allArticles, setAllArticles] = useState<Article[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [settings, setSettings] = useState<any>(null);
-  
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingNext, setLoadingNext] = useState(false);
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
+  const loaderRef = useRef<HTMLDivElement>(null);
+
   // Load site settings on mount
   useEffect(() => {
     async function loadSettings() {
@@ -49,14 +55,55 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     }
     loadSettings();
   }, []);
-  
-  // Comments state
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [commentName, setCommentName] = useState('');
-  const [commentText, setCommentText] = useState('');
-  const [likes, setLikes] = useState(0);
-  const [hasLiked, setHasLiked] = useState(false);
-  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
+
+  // Fetch other published articles to find next articles to load
+  useEffect(() => {
+    async function loadAllArticles() {
+      try {
+        const data = await db.getArticles();
+        const published = data.filter(
+          a => a.status === 'published' && a.id !== initialArticle.id
+        );
+        setAllArticles(published);
+        if (published.length === 0) {
+          setHasMore(false);
+        }
+      } catch (err) {
+        console.error('Failed to load articles list for scroll:', err);
+        setHasMore(false);
+      }
+    }
+    loadAllArticles();
+  }, [initialArticle]);
+
+  // Fetch related articles for the first article's "Baca Juga" slot
+  useEffect(() => {
+    db.getArticles(initialArticle.category).then(data => {
+      const published = data.filter(
+        a => a.status === 'published' && a.id !== initialArticle.id
+      );
+      setRelatedArticles(published.slice(0, 5));
+    });
+  }, [initialArticle]);
+
+  // Load next article sequentially
+  const loadNextArticle = () => {
+    if (loadingNext || !hasMore) return;
+    setLoadingNext(true);
+
+    const loadedIds = articlesList.map(a => a.id);
+    const nextArticle = allArticles.find(a => !loadedIds.includes(a.id));
+
+    if (nextArticle) {
+      setTimeout(() => {
+        setArticlesList(prev => [...prev, nextArticle]);
+        setLoadingNext(false);
+      }, 1200);
+    } else {
+      setHasMore(false);
+      setLoadingNext(false);
+    }
+  };
 
   // Scroll Progress Bar Tracker
   useEffect(() => {
@@ -71,12 +118,239 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Increment views & load comments & fetch related articles on mount
+  // IntersectionObserver for auto loading next article
   useEffect(() => {
-    setLikes(Math.floor(initialArticle.views / 20) + 5); // Seed likes based on views
+    if (!hasMore || allArticles.length === 0 || loadingNext) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadNextArticle();
+        }
+      },
+      { rootMargin: '150px' }
+    );
+
+    const target = loaderRef.current;
+    if (target) {
+      observer.observe(target);
+    }
+
+    return () => {
+      if (target) {
+        observer.unobserve(target);
+      }
+    };
+  }, [hasMore, allArticles, articlesList, loadingNext]);
+
+  // IntersectionObserver for Virtual URL Routing & Document Title update
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const slug = entry.target.getAttribute('data-slug');
+            const title = entry.target.getAttribute('data-title');
+            if (slug && title) {
+              window.history.replaceState(null, '', `/article/${slug}`);
+              document.title = `${title} | ${settings?.site_title || 'masandigital.com'}`;
+            }
+          }
+        });
+      },
+      {
+        rootMargin: '-20% 0px -65% 0px'
+      }
+    );
+
+    const containers = document.querySelectorAll('.article-block-container');
+    containers.forEach((c) => observer.observe(c));
+
+    return () => observer.disconnect();
+  }, [articlesList, settings]);
+
+  const activeArticle = articlesList[articlesList.length - 1] || initialArticle;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background text-on-background animate-in fade-in duration-500">
+      {/* Interactive reading progress indicator */}
+      <div className="reading-progress-container">
+        <div className="reading-progress-bar" style={{ width: `${scrollProgress}%` }}></div>
+      </div>
+
+      <Navbar />
+
+      <main className="pt-36 pb-16 flex-grow">
+        <div className="max-w-7xl mx-auto px-6 lg:px-16">
+          
+          {/* Above Header Ad Slot */}
+          {(!settings || (settings.ads_enabled && settings.ads_placements.above_header)) && (
+            <div className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
+              {settings?.ads_script_code ? (
+                <AdSlot html={settings.ads_script_code} placement="above_header" />
+              ) : (
+                <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+              )}
+            </div>
+          )}
+          
+          {/* Breadcrumbs Navigation */}
+          <nav className="flex items-center gap-2 mb-8 text-on-surface-variant/80 font-semibold text-xs">
+            <Link href="/" className="hover:text-primary transition-colors flex items-center gap-1">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Home
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant/40" />
+            <span className="bg-primary/5 text-primary px-2.5 py-0.5 rounded-full uppercase text-[10px] tracking-wider font-bold">
+              {activeArticle.category}
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant/40" />
+            <span className="text-on-surface-variant truncate max-w-xs">{activeArticle.title}</span>
+          </nav>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
+            
+            {/* Left Sidebar Share Drawers */}
+            <div className="hidden xl:flex flex-col gap-4 sticky top-28 h-fit col-span-1 -ml-16">
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  alert('Link copied to clipboard!');
+                }} 
+                className="w-12 h-12 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+                title="Share Article"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  alert('Thank you for liking this article!');
+                }} 
+                className="w-12 h-12 rounded-full border border-outline-variant/30 flex items-center justify-center transition-colors bg-surface-container-low hover:bg-primary hover:text-white"
+                title="Like Article"
+              >
+                <ThumbsUp className="w-4 h-4" />
+              </button>
+              <button 
+                className="w-12 h-12 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+                title="Bookmark"
+              >
+                <Bookmark className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Middle Main Content Block with dynamic Infinite Scroll */}
+            <div className="lg:col-span-8 space-y-16">
+              {articlesList.map((art, index) => (
+                <div 
+                  key={art.id} 
+                  data-slug={art.slug} 
+                  data-title={art.title} 
+                  className="article-block-container"
+                >
+                  <ArticleBlock 
+                    article={art} 
+                    settings={settings} 
+                    isFirst={index === 0} 
+                    relatedArticles={relatedArticles}
+                  />
+                </div>
+              ))}
+
+              {/* Dynamic scroll loading state indicator */}
+              {hasMore && (
+                <div 
+                  ref={loaderRef} 
+                  className="py-12 bg-surface-container-low/40 rounded-3xl border border-dashed border-outline-variant/50 text-center flex flex-col justify-center items-center gap-3 animate-pulse"
+                >
+                  <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs font-black text-primary uppercase tracking-widest font-sans">
+                    Menggulir untuk memuat artikel berikutnya...
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Right Sidebar TOC */}
+            <aside className="lg:col-span-4 space-y-8">
+              
+              {/* Sidebar Ad Slot */}
+              {(!settings || (settings.ads_enabled && settings.ads_placements.sidebar)) && (
+                <div className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
+                  {settings?.ads_script_code ? (
+                    <AdSlot html={settings.ads_script_code} placement="sidebar" />
+                  ) : (
+                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+                  )}
+                </div>
+              )}
+
+              {/* Share Card Widget */}
+              <div className="p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md space-y-4 sticky top-28">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/5 opacity-30 rounded-3xl pointer-events-none"></div>
+                <div className="relative z-10 space-y-3">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-on-surface flex items-center gap-1.5 font-sans">
+                    <Share2 className="w-3.5 h-3.5 text-secondary animate-pulse" />
+                    Share Insights
+                  </h4>
+                  <p className="text-[11px] text-on-surface-variant leading-relaxed font-sans">
+                    Spread these expert technical summaries and analytical frameworks with your global network.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(activeArticle.title)}`, '_blank');
+                      }}
+                      className="flex items-center justify-center gap-1.5 bg-black hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
+                    >
+                      X / Twitter
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`, '_blank');
+                      }}
+                      className="flex items-center justify-center gap-1.5 bg-blue-700 hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
+                    >
+                      LinkedIn
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+// ==========================================
+// SUB-COMPONENT: ARTICLE BLOCK UNIT FOR INFINITE SCROLL
+// ==========================================
+interface ArticleBlockProps {
+  article: Article;
+  settings: any;
+  isFirst: boolean;
+  relatedArticles: Article[];
+}
+
+function ArticleBlock({ article, settings, isFirst, relatedArticles }: ArticleBlockProps) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentName, setCommentName] = useState('');
+  const [commentText, setCommentText] = useState('');
+  const [likes, setLikes] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
+
+  // Initialize and load comments
+  useEffect(() => {
+    setLikes(Math.floor(article.views / 20) + 5);
     
-    // Load comments
-    const storedComments = localStorage.getItem(`comments_${initialArticle.id}`);
+    const storedComments = localStorage.getItem(`comments_${article.id}`);
     if (storedComments) {
       setComments(JSON.parse(storedComments));
     } else {
@@ -91,22 +365,12 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
         }
       ];
       setComments(defaultComments);
-      localStorage.setItem(`comments_${initialArticle.id}`, JSON.stringify(defaultComments));
+      localStorage.setItem(`comments_${article.id}`, JSON.stringify(defaultComments));
     }
 
-    // Increment views in DB / local storage
-    db.incrementViews(initialArticle.id).then(newViews => {
-      setArticle(prev => ({ ...prev, views: newViews }));
-    });
-
-    // Fetch related articles from the same category
-    db.getArticles(initialArticle.category).then(data => {
-      const published = data.filter(
-        a => a.status === 'published' && a.id !== initialArticle.id
-      );
-      setRelatedArticles(published.slice(0, 5));
-    });
-  }, [initialArticle]);
+    // Increment views in DB
+    db.incrementViews(article.id);
+  }, [article]);
 
   const handleLike = () => {
     if (!hasLiked) {
@@ -161,7 +425,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     let idx = 0;
     while ((match = h2Regex.exec(article.content)) !== null) {
       const label = match[1].replace(/<[^>]*>/g, '').trim();
-      tocItems.push({ id: `heading-${idx}`, label });
+      tocItems.push({ id: `heading-${article.id}-${idx}`, label });
       idx++;
     }
 
@@ -169,464 +433,349 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
     let count = 0;
     finalContent = article.content.replace(/<h2([^>]*)>/gi, (m, attrs) => {
       if (/id=/i.test(attrs)) return m;
-      return `<h2${attrs} id="heading-${count++}">`;
+      return `<h2${attrs} id="heading-${article.id}-${count++}">`;
     });
   } else {
     // Plain text fallback static items
     tocItems.push(
-      { id: 'sec-intro', label: 'Introduction' },
-      { id: 'sec-arch', label: 'Architecting for Hyper-Speed' },
-      { id: 'sec-trust', label: 'Digital Trust Protocols' },
-      { id: 'sec-future', label: 'Future Editorial Outlook' }
+      { id: `sec-intro-${article.id}`, label: 'Introduction' },
+      { id: `sec-arch-${article.id}`, label: 'Architecting for Hyper-Speed' },
+      { id: `sec-trust-${article.id}`, label: 'Digital Trust Protocols' },
+      { id: `sec-future-${article.id}`, label: 'Future Editorial Outlook' }
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-on-background">
-      {/* Interactive reading progress indicator */}
-      <div className="reading-progress-container">
-        <div className="reading-progress-bar" style={{ width: `${scrollProgress}%` }}></div>
+    <div className="space-y-8 border-b border-outline-variant/15 pb-16">
+      
+      {/* Category & Stats Breadcrumbs (for secondary articles) */}
+      {!isFirst && (
+        <div className="flex items-center gap-2 pt-16 border-t border-outline-variant/10">
+          <span className="text-[10px] uppercase font-bold tracking-widest bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 animate-pulse">
+            Next Read
+          </span>
+          <span className="text-on-surface-variant/40 text-xs font-bold">•</span>
+          <span className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">
+            {article.category}
+          </span>
+        </div>
+      )}
+
+      {/* Cover Image */}
+      <div className="w-full aspect-[21/10] relative rounded-3xl overflow-hidden shadow-md">
+        <Image
+          src={article.cover_image}
+          alt={article.title}
+          fill
+          priority={isFirst}
+          sizes="(max-w-768px) 100vw, 800px"
+          className="object-cover animate-fade-in"
+        />
       </div>
 
-      <Navbar />
-
-      <main className="pt-36 pb-16 flex-grow">
-        <div className="max-w-7xl mx-auto px-6 lg:px-16">
-          
-          {/* Above Header Ad Slot (Zero CLS Optimization) */}
-          {(!settings || (settings.ads_enabled && settings.ads_placements.above_header)) && (
-            <div className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
-              {settings?.ads_script_code ? (
-                <AdSlot html={settings.ads_script_code} placement="above_header" />
-              ) : (
-                <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
-              )}
+      {/* Title & Stats */}
+      <header className="mb-8">
+        <h1 className="text-3xl md:text-5xl font-extrabold text-on-surface tracking-tight leading-tight mb-6">
+          {article.title}
+        </h1>
+        
+        <div className="flex items-center gap-4 border-b border-outline-variant/20 pb-6">
+          <div className="relative w-12 h-12 rounded-full overflow-hidden">
+            <img
+              src={article.author_avatar}
+              alt={article.author_name}
+              className="w-full h-full object-cover ring-2 ring-primary/10"
+              onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
+            />
+          </div>
+          <div className="flex-grow">
+            <p className="text-sm font-bold text-on-surface">{article.author_name}</p>
+            <div className="flex items-center gap-3 text-xs text-on-surface-variant">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {new Date(article.published_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {article.reading_time} min read
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5" />
+                {article.views} views
+              </span>
             </div>
-          )}
-          
-          {/* Breadcrumbs Navigation */}
-          <nav className="flex items-center gap-2 mb-8 text-on-surface-variant/80 font-semibold text-xs">
-            <Link href="/" className="hover:text-primary transition-colors flex items-center gap-1">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Home
-            </Link>
-            <ChevronRight className="w-3 h-3 text-on-surface-variant/40" />
-            <span className="bg-primary/5 text-primary px-2.5 py-0.5 rounded-full uppercase text-[10px] tracking-wider font-bold">
-              {article.category}
-            </span>
-            <ChevronRight className="w-3 h-3 text-on-surface-variant/40" />
-            <span className="text-on-surface-variant truncate max-w-xs">{article.title}</span>
-          </nav>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
-            
-            {/* Left Sidebar Share Drawers */}
-            <div className="hidden xl:flex flex-col gap-4 sticky top-28 h-fit col-span-1 -ml-16">
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  alert('Link copied to clipboard!');
-                }} 
-                className="w-12 h-12 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-                title="Share Article"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={handleLike} 
-                className={`w-12 h-12 rounded-full border border-outline-variant/30 flex items-center justify-center transition-colors ${
-                  hasLiked ? 'bg-primary text-white' : 'bg-surface-container-low hover:bg-primary hover:text-white'
-                }`}
-                title="Like Article"
-              >
-                <ThumbsUp className="w-4 h-4" />
-              </button>
-              <button 
-                className="w-12 h-12 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-                title="Bookmark"
-              >
-                <Bookmark className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Middle Main Content Block */}
-            <article className="lg:col-span-8">
-              
-              {/* Cover Image Optimized via next/image */}
-              <div className="w-full aspect-[21/10] relative rounded-3xl overflow-hidden shadow-md mb-8">
-                <Image
-                  src={article.cover_image}
-                  alt={article.title}
-                  fill
-                  priority
-                  sizes="(max-w-768px) 100vw, 800px"
-                  className="object-cover"
-                />
-              </div>
-
-              {/* Title & Stats */}
-              <header className="mb-8">
-                <span className="inline-block bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full font-bold text-[11px] mb-4 uppercase tracking-widest">
-                  {article.category}
-                </span>
-                <h1 className="text-3xl md:text-5xl font-extrabold text-on-surface tracking-tight leading-tight mb-6">
-                  {article.title}
-                </h1>
-                
-                <div className="flex items-center gap-4 border-b border-outline-variant/20 pb-6">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden">
-                    <img
-                      src={article.author_avatar}
-                      alt={article.author_name}
-                      className="w-full h-full object-cover ring-2 ring-primary/10"
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
-                    />
-                  </div>
-                  <div className="flex-grow">
-                    <p className="text-sm font-bold text-on-surface">{article.author_name}</p>
-                    <div className="flex items-center gap-3 text-xs text-on-surface-variant">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {new Date(article.published_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {article.reading_time} min read
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3.5 h-3.5" />
-                        {article.views} views
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </header>
-
-              {/* Below Title Ad Slot (Zero CLS Optimization) */}
-              {(!settings || (settings.ads_enabled && settings.ads_placements.below_title)) && (
-                <div className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
-                  {settings?.ads_script_code ? (
-                    <AdSlot html={settings.ads_script_code} placement="below_title" />
-                  ) : (
-                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
-                  )}
-                </div>
-              )}
-
-              {/* AI Reader and Summary Companion (Idea 1) */}
-              <AICompanion
-                title={article.title}
-                content={article.content}
-                excerpt={article.excerpt}
-                category={article.category}
-                tocItems={tocItems}
-              />
-
-              {/* Dynamic Auto Table of Contents (TOC) - Berada Sebelum Awal Article */}
-              {tocItems.length > 0 && (
-                <div className="mb-8 p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md relative overflow-hidden group">
-                  <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-2xl pointer-events-none"></div>
-                  <h4 className="font-extrabold text-[10px] uppercase tracking-widest text-primary mb-4 flex items-center gap-2 font-sans">
-                    <BookOpen className="w-4 h-4 text-primary animate-pulse" />
-                    Daftar Isi Artikel (Table of Contents)
-                  </h4>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 font-bold text-xs text-on-surface-variant font-sans">
-                    {tocItems.map((item) => (
-                      <li key={item.id} className="flex items-center">
-                        <a
-                          href={`#${item.id}`}
-                          className="hover:text-primary transition-all flex items-center gap-2 pl-3 border-l-2 border-primary/25 hover:border-primary py-1.5 w-full hover:translate-x-1 duration-300"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 flex-shrink-0" />
-                          {item.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Article Content Body */}
-              {isHtml ? (
-                <div 
-                  className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: finalContent }}
-                />
-              ) : (
-                <div className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none">
-                  {finalContent.split('\n\n').map((paragraph, idx) => {
-                    if (idx === 0) {
-                      return (
-                        <p 
-                          key={idx} 
-                          id="sec-intro"
-                          className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none"
-                        >
-                          {paragraph}
-                        </p>
-                      );
-                    }
-                    
-                    if (idx === 1) {
-                      return (
-                        <div key={idx} className="space-y-6">
-                          <h2 id="sec-arch" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                            Architecting for Hyper-Speed
-                          </h2>
-                          <p>{paragraph}</p>
-                        </div>
-                      );
-                    }
-
-                    if (idx === 2) {
-                      return (
-                        <div key={idx} className="space-y-6">
-                          <h2 id="sec-trust" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                            Digital Trust Protocols
-                          </h2>
-                          <p>{paragraph}</p>
-                        </div>
-                      );
-                    }
-
-                    if (idx === 3) {
-                      return (
-                        <div key={idx} className="space-y-6">
-                          <h2 id="sec-future" className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                            Future Editorial Outlook
-                          </h2>
-                          <p>{paragraph}</p>
-                        </div>
-                      );
-                    }
-
-                    return <p key={idx}>{paragraph}</p>;
-                  })}
-                </div>
-              )}
-
-              {/* Baca Juga - Related Articles from Same Category */}
-              {relatedArticles.length > 0 && (
-                <div className="mt-12 p-6 md:p-8 bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-3xl shadow-lg">
-                  <h3 className="text-base md:text-lg font-black text-on-surface tracking-tight mb-5 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary" />
-                    Baca Juga
-                    <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/15 ml-1">
-                      {article.category}
-                    </span>
-                  </h3>
-                  <div className="space-y-3">
-                    {relatedArticles.map((related) => (
-                      <Link
-                        key={related.id}
-                        href={`/article/${related.slug}`}
-                        className="group flex items-start gap-3 p-3.5 rounded-2xl bg-surface-container-lowest/60 border border-outline-variant/15 hover:border-primary/30 hover:bg-surface-container-high/50 transition-all duration-300"
-                      >
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
-                          <ChevronRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                        <div className="flex-grow min-w-0">
-                          <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-                            {related.title}
-                          </p>
-                          <p className="text-[11px] text-on-surface-variant mt-1 flex items-center gap-2">
-                            <span>{new Date(related.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                            <span>•</span>
-                            <span>{related.reading_time} min read</span>
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Author Biography */}
-              <div className="mt-12 p-8 bg-surface-container-low/40 border border-outline-variant/20 rounded-3xl flex flex-col md:flex-row gap-6 items-center shadow-xl backdrop-blur-sm">
-                <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary/30 shadow-md">
-                  <img
-                    src={article.author_avatar}
-                    alt={article.author_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
-                  />
-                </div>
-                <div className="space-y-2 text-center md:text-left">
-                  <h3 className="text-lg font-black text-on-surface">About {article.author_name}</h3>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">
-                    Senior Lead Writer and Strategist at {settings?.site_title || 'masandigital.com'}. Specialized in advanced technical architecture, 
-                    AI systems design, and next-generation web platforms.
-                  </p>
-                </div>
-              </div>
-
-              {/* Above Comments Ad Slot (Zero CLS Optimization) */}
-              {(!settings || (settings.ads_enabled && settings.ads_placements.above_comments)) && (
-                <div className="w-full min-h-[90px] mt-12 overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
-                  {settings?.ads_script_code ? (
-                    <AdSlot html={settings.ads_script_code} placement="above_comments" />
-                  ) : (
-                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
-                  )}
-                </div>
-              )}
-
-              {/* Interactive Comments thread */}
-              <section className="mt-12 border-t border-outline-variant/20 pt-12">
-                <h3 className="text-xl md:text-2xl font-extrabold text-on-surface mb-8 flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-primary animate-pulse" />
-                  Discussion ({comments.length})
-                </h3>
-
-                 {/* Comment Form or Anti-Spam Notice */}
-                {article.comments_enabled !== false ? (
-                  <form onSubmit={submitComment} className="bg-surface-container-low/40 border border-outline-variant/30 rounded-2xl p-6 mb-8 flex gap-4 items-start shadow-lg backdrop-blur-sm">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-black text-sm shadow-md">
-                      {commentName ? commentName.charAt(0).toUpperCase() : '?'}
-                    </div>
-                    <div className="flex-grow space-y-4">
-                      <input
-                        type="text"
-                        required
-                        placeholder="Your name"
-                        value={commentName}
-                        aria-label="Your name for comment"
-                        onChange={(e) => setCommentName(e.target.value)}
-                        className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none transition-colors shadow-inner"
-                      />
-                      <textarea
-                        required
-                        rows={3}
-                        placeholder="Add to the conversation..."
-                        value={commentText}
-                        aria-label="Comment content"
-                        onChange={(e) => setCommentText(e.target.value)}
-                        className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none transition-colors shadow-inner"
-                      />
-                      <div className="flex justify-end">
-                        <button
-                          type="submit"
-                          className="bg-gradient-to-r from-primary to-secondary hover:opacity-95 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg shadow-primary/10 flex items-center gap-2 transition-opacity cursor-pointer"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                          Post Comment
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="bg-surface-container-low/40 border border-outline-variant/20 rounded-2xl p-6 mb-8 text-center space-y-2.5 shadow-lg backdrop-blur-sm">
-                    <ShieldAlert className="w-8 h-8 text-primary mx-auto opacity-75 animate-bounce-slow" />
-                    <h4 className="font-extrabold text-sm text-on-surface">Discussion Stream Protected</h4>
-                    <p className="text-xs text-on-surface-variant max-w-md mx-auto leading-relaxed">
-                      Kolom komentar dinonaktifkan untuk artikel ini guna menghindari spam komentar bot. Portal diskusi aman terlindungi.
-                    </p>
-                  </div>
-                )}
-
-                {/* List Comments */}
-                <div className="space-y-6">
-                  {comments.length === 0 ? (
-                    <p className="text-sm text-on-surface-variant italic text-center py-6">No discussions yet. Be the first to share your thoughts!</p>
-                  ) : (
-                    comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-4 p-4 hover:bg-surface-container-low rounded-xl transition-colors">
-                        <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                          <Image
-                            src={comment.avatar}
-                            alt={comment.author}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex-grow pb-4 border-b border-outline-variant/10">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-bold text-sm text-on-surface">{comment.author}</span>
-                            <span className="text-[10px] text-on-surface-variant">{comment.timestamp}</span>
-                          </div>
-                          <p className="text-sm text-on-surface-variant leading-relaxed">
-                            {comment.content}
-                          </p>
-                          <div className="flex items-center gap-4 mt-3">
-                            <button 
-                              onClick={() => handleCommentLike(comment.id)}
-                              className="flex items-center gap-1 text-[11px] font-semibold text-on-surface-variant hover:text-primary transition-colors"
-                            >
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                              {comment.likes}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-              </section>
-
-            </article>
-
-            {/* Right Sidebar TOC */}
-            <aside className="lg:col-span-4 space-y-8">
-              
-              {/* Sidebar Ad Slot (Zero CLS Optimization) */}
-              {(!settings || (settings.ads_enabled && settings.ads_placements.sidebar)) && (
-                <div className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
-                  {settings?.ads_script_code ? (
-                    <AdSlot html={settings.ads_script_code} placement="sidebar" />
-                  ) : (
-                    <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
-                  )}
-                </div>
-              )}
-
-              {/* Share Card Widget - Mengisi Sidebar agar Tampil Sangat Premium */}
-              <div className="p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md space-y-4 sticky top-28">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/5 opacity-30 rounded-3xl pointer-events-none"></div>
-                <div className="relative z-10 space-y-3">
-                  <h4 className="font-black text-xs uppercase tracking-wider text-on-surface flex items-center gap-1.5 font-sans">
-                    <Share2 className="w-3.5 h-3.5 text-secondary animate-pulse" />
-                    Share Insights
-                  </h4>
-                  <p className="text-[11px] text-on-surface-variant leading-relaxed font-sans">
-                    Spread these expert technical summaries and analytical frameworks with your global network.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(article.title)}`, '_blank');
-                      }}
-                      className="flex items-center justify-center gap-1.5 bg-black hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
-                    >
-                      X / Twitter
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`, '_blank');
-                      }}
-                      className="flex items-center justify-center gap-1.5 bg-blue-700 hover:opacity-95 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-all cursor-pointer shadow-md hover:scale-103 active:scale-97"
-                    >
-                      LinkedIn
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </aside>
-
           </div>
         </div>
-      </main>
+      </header>
 
-      <Footer />
+      {/* Below Title Ad Slot */}
+      {(!settings || (settings.ads_enabled && settings.ads_placements.below_title)) && (
+        <div className="w-full min-h-[90px] overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
+          {settings?.ads_script_code ? (
+            <AdSlot html={settings.ads_script_code} placement={`below_title_${article.id}`} />
+          ) : (
+            <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+          )}
+        </div>
+      )}
+
+      {/* AI Reader and Summary Companion */}
+      <AICompanion
+        title={article.title}
+        content={article.content}
+        excerpt={article.excerpt}
+        category={article.category}
+        tocItems={tocItems}
+      />
+
+      {/* Table of Contents */}
+      {tocItems.length > 0 && (
+        <div className="p-6 bg-surface-container-low/40 border border-primary/20 rounded-3xl shadow-xl backdrop-blur-md relative overflow-hidden group">
+          <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-2xl pointer-events-none"></div>
+          <h4 className="font-extrabold text-[10px] uppercase tracking-widest text-primary mb-4 flex items-center gap-2 font-sans">
+            <BookOpen className="w-4 h-4 text-primary animate-pulse" />
+            Daftar Isi Artikel (Table of Contents)
+          </h4>
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 font-bold text-xs text-on-surface-variant font-sans">
+            {tocItems.map((item) => (
+              <li key={item.id} className="flex items-center">
+                <a
+                  href={`#${item.id}`}
+                  className="hover:text-primary transition-all flex items-center gap-2 pl-3 border-l-2 border-primary/25 hover:border-primary py-1.5 w-full hover:translate-x-1 duration-300"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-secondary/50 flex-shrink-0" />
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Article Content Body */}
+      {isHtml ? (
+        <div 
+          className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none"
+          dangerouslySetInnerHTML={{ __html: finalContent }}
+        />
+      ) : (
+        <div className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none">
+          {finalContent.split('\n\n').map((paragraph, idx) => {
+            if (idx === 0) {
+              return (
+                <p 
+                  key={idx} 
+                  id={`sec-intro-${article.id}`}
+                  className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none"
+                >
+                  {paragraph}
+                </p>
+              );
+            }
+            
+            if (idx === 1) {
+              return (
+                <div key={idx} className="space-y-6">
+                  <h2 id={`sec-arch-${article.id}`} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
+                    Architecting for Hyper-Speed
+                  </h2>
+                  <p>{paragraph}</p>
+                </div>
+              );
+            }
+
+            if (idx === 2) {
+              return (
+                <div key={idx} className="space-y-6">
+                  <h2 id={`sec-trust-${article.id}`} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
+                    Digital Trust Protocols
+                  </h2>
+                  <p>{paragraph}</p>
+                </div>
+              );
+            }
+
+            if (idx === 3) {
+              return (
+                <div key={idx} className="space-y-6">
+                  <h2 id={`sec-future-${article.id}`} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
+                    Future Editorial Outlook
+                  </h2>
+                  <p>{paragraph}</p>
+                </div>
+              );
+            }
+
+            return <p key={idx}>{paragraph}</p>;
+          })}
+        </div>
+      )}
+
+      {/* Baca Juga - Related Articles */}
+      {isFirst && relatedArticles.length > 0 && (
+        <div className="p-6 md:p-8 bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-3xl shadow-lg">
+          <h3 className="text-base md:text-lg font-black text-on-surface tracking-tight mb-5 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-primary" />
+            Baca Juga
+            <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/15 ml-1">
+              {article.category}
+            </span>
+          </h3>
+          <div className="space-y-3">
+            {relatedArticles.map((related) => (
+              <Link
+                key={related.id}
+                href={`/article/${related.slug}`}
+                className="group flex items-start gap-3 p-3.5 rounded-2xl bg-surface-container-lowest/60 border border-outline-variant/15 hover:border-primary/30 hover:bg-surface-container-high/50 transition-all duration-300"
+              >
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <div className="flex-grow min-w-0">
+                  <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                    {related.title}
+                  </p>
+                  <p className="text-[11px] text-on-surface-variant mt-1 flex items-center gap-2">
+                    <span>{new Date(related.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    <span>•</span>
+                    <span>{related.reading_time} min read</span>
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Author Biography */}
+      <div className="p-8 bg-surface-container-low/40 border border-outline-variant/20 rounded-3xl flex flex-col md:flex-row gap-6 items-center shadow-xl backdrop-blur-sm">
+        <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary/30 shadow-md">
+          <img
+            src={article.author_avatar}
+            alt={article.author_name}
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
+          />
+        </div>
+        <div className="space-y-2 text-center md:text-left">
+          <h3 className="text-lg font-black text-on-surface">About {article.author_name}</h3>
+          <p className="text-xs text-on-surface-variant leading-relaxed">
+            Senior Lead Writer and Strategist at {settings?.site_title || 'masandigital.com'}. Specialized in advanced technical architecture, 
+            AI systems design, and next-generation web platforms.
+          </p>
+        </div>
+      </div>
+
+      {/* Above Comments Ad Slot */}
+      {(!settings || (settings.ads_enabled && settings.ads_placements.above_comments)) && (
+        <div className="w-full min-h-[90px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
+          {settings?.ads_script_code ? (
+            <AdSlot html={settings.ads_script_code} placement={`above_comments_${article.id}`} />
+          ) : (
+            <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
+          )}
+        </div>
+      )}
+
+      {/* Interactive Comments thread */}
+      <section className="border-t border-outline-variant/20 pt-12">
+        <h3 className="text-xl md:text-2xl font-extrabold text-on-surface mb-8 flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-primary animate-pulse" />
+          Discussion ({comments.length})
+        </h3>
+
+        {/* Comment Form */}
+        {article.comments_enabled !== false ? (
+          <form onSubmit={submitComment} className="bg-surface-container-low/40 border border-outline-variant/30 rounded-2xl p-6 mb-8 flex gap-4 items-start shadow-lg backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-black text-sm shadow-md">
+              {commentName ? commentName.charAt(0).toUpperCase() : '?'}
+            </div>
+            <div className="flex-grow space-y-4">
+              <input
+                type="text"
+                required
+                placeholder="Your name"
+                value={commentName}
+                aria-label="Your name for comment"
+                onChange={(e) => setCommentName(e.target.value)}
+                className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none transition-colors shadow-inner"
+              />
+              <textarea
+                required
+                rows={3}
+                placeholder="Add to the conversation..."
+                value={commentText}
+                aria-label="Comment content"
+                onChange={(e) => setCommentText(e.target.value)}
+                className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none transition-colors shadow-inner"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-95 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg shadow-primary/10 flex items-center gap-2 transition-opacity cursor-pointer animate-fade-in"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Post Comment
+                </button>
+              </div>
+            </div>
+          </form>
+        ) : (
+          <div className="bg-surface-container-low/40 border border-outline-variant/20 rounded-2xl p-6 mb-8 text-center space-y-2.5 shadow-lg backdrop-blur-sm">
+            <ShieldAlert className="w-8 h-8 text-primary mx-auto opacity-75 animate-bounce-slow" />
+            <h4 className="font-extrabold text-sm text-on-surface">Discussion Stream Protected</h4>
+            <p className="text-xs text-on-surface-variant max-w-md mx-auto leading-relaxed">
+              Kolom komentar dinonaktifkan untuk artikel ini guna menghindari spam komentar bot. Portal diskusi aman terlindungi.
+            </p>
+          </div>
+        )}
+
+        {/* List Comments */}
+        <div className="space-y-6">
+          {comments.length === 0 ? (
+            <p className="text-sm text-on-surface-variant italic text-center py-6">No discussions yet. Be the first to share your thoughts!</p>
+          ) : (
+            comments.map((comment) => (
+              <div key={comment.id} className="flex gap-4 p-4 hover:bg-surface-container-low rounded-xl transition-colors">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                  <Image
+                    src={comment.avatar}
+                    alt={comment.author}
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-grow pb-4 border-b border-outline-variant/10">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-sm text-on-surface">{comment.author}</span>
+                    <span className="text-[10px] text-on-surface-variant">{comment.timestamp}</span>
+                  </div>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                    {comment.content}
+                  </p>
+                  <div className="flex items-center gap-4 mt-3">
+                    <button 
+                      onClick={() => handleCommentLike(comment.id)}
+                      className="flex items-center gap-1 text-[11px] font-semibold text-on-surface-variant hover:text-primary transition-colors"
+                    >
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                      {comment.likes}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+      </section>
     </div>
   );
 }
