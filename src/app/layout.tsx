@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import TrackingScripts from "../components/TrackingScripts";
+import ThemeCustomizer from "../components/ThemeCustomizer";
 import { db } from "../lib/db";
 
 const inter = Inter({
@@ -75,7 +76,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans bg-background text-on-background">
         <TrackingScripts />
         {children}
+        <ThemeCustomizer />
       </body>
     </html>
   );
 }
+

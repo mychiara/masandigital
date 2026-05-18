@@ -19,6 +19,25 @@ export default function HomePage() {
   const [settings, setSettings] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [allArticles, setAllArticles] = useState<Article[]>([]);
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'list' | 'magazine'>('grid');
+
+  // Synchronize layout mode from theme customizer (C)
+  useEffect(() => {
+    const savedLayout = localStorage.getItem('masandigital_layout');
+    if (savedLayout === 'grid' || savedLayout === 'list' || savedLayout === 'magazine') {
+      setLayoutMode(savedLayout as any);
+    }
+    
+    const handleLayoutChange = (e: Event) => {
+      const newLayout = (e as CustomEvent).detail;
+      setLayoutMode(newLayout);
+    };
+
+    window.addEventListener('masandigital_layout_change', handleLayoutChange);
+    return () => {
+      window.removeEventListener('masandigital_layout_change', handleLayoutChange);
+    };
+  }, []);
 
   // Fetch articles on mount and filter changes
   useEffect(() => {
@@ -311,80 +330,250 @@ export default function HomePage() {
                     </article>
                   )}
 
-                  {/* Articles Grid list */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {paginatedArticles.map((article) => (
-                      <article
-                        key={article.id}
-                        className="group neon-glow-card bg-surface-container-low/30 border border-outline-variant/25 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full transform hover:-translate-y-1"
-                      >
-                        <div className="aspect-[16/10] w-full relative overflow-hidden">
-                          <Image
-                            src={article.cover_image}
-                            alt={article.title}
-                            fill
-                            loading="lazy"
-                            sizes="(max-width: 768px) 100vw, 400px"
-                            className="object-cover group-hover:scale-105 transition-transform duration-700"
-                          />
-                          <span className="absolute top-3 left-3 bg-secondary/80 backdrop-blur-md text-white font-black text-[9px] tracking-widest px-3 py-1 rounded-full uppercase shadow-md z-10 border border-white/10">
-                            {article.category}
-                          </span>
-                        </div>
-                        
-                        <div className="p-6 flex flex-col flex-grow space-y-3">
-                          <div className="flex items-center gap-3 text-[11px] text-on-surface-variant font-bold">
-                            <span>
-                              {new Date(article.published_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </span>
-                            <span>•</span>
-                            <span>{article.reading_time} min read</span>
-                            <span>•</span>
-                            <span className="flex items-center gap-0.5">
-                              <Eye className="w-3 h-3 text-tertiary" />
-                              {article.views}
-                            </span>
-                          </div>
-                          
-                          <h3 className="text-base md:text-lg font-bold text-on-surface group-hover:text-primary transition-colors tracking-tight line-clamp-2 leading-snug">
-                            <Link href={`/article/${article.slug}`}>
-                              {article.title}
-                            </Link>
-                          </h3>
-                          
-                          <p className="text-xs text-on-surface-variant line-clamp-3 leading-relaxed flex-grow">
-                            {article.excerpt}
-                          </p>
-                          
-                          <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">
-                            <div className="flex items-center gap-2">
-                              <div className="relative w-7 h-7 rounded-full overflow-hidden ring-1 ring-primary/30">
-                                <img
-                                  src={article.author_avatar}
-                                  alt={article.author_name}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
-                                />
-                              </div>
-                              <span className="text-[11px] font-semibold text-on-surface">{article.author_name}</span>
+                  {/* Dynamic Multi-Layout Articles Feed (C) */}
+                  <div className={
+                    layoutMode === 'list' 
+                      ? "flex flex-col gap-6" 
+                      : layoutMode === 'magazine'
+                        ? "grid grid-cols-1 md:grid-cols-12 gap-6"
+                        : "grid grid-cols-1 md:grid-cols-2 gap-6"
+                  }>
+                    {paginatedArticles.map((article, idx) => {
+                      const isList = layoutMode === 'list';
+                      const isMagazine = layoutMode === 'magazine';
+                      
+                      if (isList) {
+                        return (
+                          <article
+                            key={article.id}
+                            className="group neon-glow-card bg-surface-container-low/30 border border-outline-variant/25 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row md:items-stretch w-full transform hover:-translate-y-1"
+                          >
+                            <div className="aspect-[16/10] w-full md:w-72 relative overflow-hidden flex-shrink-0">
+                              <Image
+                                src={article.cover_image}
+                                alt={article.title}
+                                fill
+                                loading="lazy"
+                                sizes="(max-width: 768px) 100vw, 300px"
+                                className="object-cover group-hover:scale-105 transition-transform duration-700"
+                              />
+                              <span className="absolute top-3 left-3 bg-secondary/80 backdrop-blur-md text-white font-black text-[9px] tracking-widest px-3 py-1 rounded-full uppercase shadow-md z-10 border border-white/10">
+                                {article.category}
+                              </span>
                             </div>
-                            <Link
-                              href={`/article/${article.slug}`}
-                              className="text-xs font-bold text-primary flex items-center gap-0.5 hover:underline"
-                            >
-                              Read
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                              </svg>
-                            </Link>
+                            
+                            <div className="p-6 flex flex-col flex-grow justify-between space-y-3 min-w-0">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-3 text-[11px] text-on-surface-variant font-bold">
+                                  <span>
+                                    {new Date(article.published_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </span>
+                                  <span>•</span>
+                                  <span>{article.reading_time} min read</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-0.5">
+                                    <Eye className="w-3 h-3 text-tertiary" />
+                                    {article.views}
+                                  </span>
+                                </div>
+                                
+                                <h3 className="text-base md:text-lg font-bold text-on-surface group-hover:text-primary transition-colors tracking-tight line-clamp-2 leading-snug">
+                                  <Link href={`/article/${article.slug}`}>
+                                    {article.title}
+                                  </Link>
+                                </h3>
+                                
+                                <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+                                  {article.excerpt}
+                                </p>
+                              </div>
+                              
+                              <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+                                <div className="flex items-center gap-2">
+                                  <div className="relative w-7 h-7 rounded-full overflow-hidden ring-1 ring-primary/30">
+                                    <img
+                                      src={article.author_avatar}
+                                      alt={article.author_name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
+                                    />
+                                  </div>
+                                  <span className="text-[11px] font-semibold text-on-surface">{article.author_name}</span>
+                                </div>
+                                <Link
+                                  href={`/article/${article.slug}`}
+                                  className="text-xs font-bold text-primary flex items-center gap-0.5 hover:underline"
+                                >
+                                  Read
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </Link>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      }
+
+                      if (isMagazine && idx === 0) {
+                        return (
+                          <article
+                            key={article.id}
+                            className="md:col-span-12 group neon-glow-card bg-surface-container-low/30 border border-outline-variant/25 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row md:items-stretch w-full transform hover:-translate-y-1"
+                          >
+                            <div className="aspect-[16/10] w-full md:w-[480px] relative overflow-hidden flex-shrink-0">
+                              <Image
+                                src={article.cover_image}
+                                alt={article.title}
+                                fill
+                                loading="lazy"
+                                sizes="(max-width: 768px) 100vw, 600px"
+                                className="object-cover group-hover:scale-105 transition-transform duration-700"
+                              />
+                              <span className="absolute top-4 left-4 bg-secondary/80 backdrop-blur-md text-white font-black text-[10px] tracking-widest px-4 py-1.5 rounded-full uppercase shadow-md z-10 border border-white/10">
+                                {article.category}
+                              </span>
+                            </div>
+                            
+                            <div className="p-8 flex flex-col flex-grow justify-between space-y-4 min-w-0">
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-xs text-on-surface-variant font-bold">
+                                  <span>
+                                    {new Date(article.published_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                  <span>•</span>
+                                  <span>{article.reading_time} min read</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-0.5">
+                                    <Eye className="w-3.5 h-3.5 text-tertiary" />
+                                    {article.views} views
+                                  </span>
+                                </div>
+                                
+                                <h3 className="text-xl md:text-2xl font-black text-on-surface group-hover:text-primary transition-colors tracking-tight line-clamp-3 leading-snug">
+                                  <Link href={`/article/${article.slug}`}>
+                                    {article.title}
+                                  </Link>
+                                </h3>
+                                
+                                <p className="text-sm text-on-surface-variant line-clamp-3 leading-relaxed">
+                                  {article.excerpt}
+                                </p>
+                              </div>
+                              
+                              <div className="flex items-center justify-between pt-6 border-t border-outline-variant/10">
+                                <div className="flex items-center gap-3">
+                                  <div className="relative w-9 h-9 rounded-full overflow-hidden ring-1 ring-primary/30">
+                                    <img
+                                      src={article.author_avatar}
+                                      alt={article.author_name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-bold text-on-surface">{article.author_name}</p>
+                                    <p className="text-[9px] text-on-surface-variant">Editorial Writer</p>
+                                  </div>
+                                </div>
+                                <Link
+                                  href={`/article/${article.slug}`}
+                                  className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                                >
+                                  Read Article
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </Link>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      }
+
+                      // Grid item (Default, and Magazine secondary items)
+                      const isMagazineSecondary = isMagazine && idx > 0;
+                      return (
+                        <article
+                          key={article.id}
+                          className={`${isMagazineSecondary ? 'md:col-span-6' : ''} group neon-glow-card bg-surface-container-low/30 border border-outline-variant/25 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full transform hover:-translate-y-1`}
+                        >
+                          <div className="aspect-[16/10] w-full relative overflow-hidden">
+                            <Image
+                              src={article.cover_image}
+                              alt={article.title}
+                              fill
+                              loading="lazy"
+                              sizes="(max-width: 768px) 100vw, 400px"
+                              className="object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                            <span className="absolute top-3 left-3 bg-secondary/80 backdrop-blur-md text-white font-black text-[9px] tracking-widest px-3 py-1 rounded-full uppercase shadow-md z-10 border border-white/10">
+                              {article.category}
+                            </span>
                           </div>
-                        </div>
-                      </article>
-                    ))}
+                          
+                          <div className="p-6 flex flex-col flex-grow space-y-3">
+                            <div className="flex items-center gap-3 text-[11px] text-on-surface-variant font-bold">
+                              <span>
+                                {new Date(article.published_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                              <span>•</span>
+                              <span>{article.reading_time} min read</span>
+                              <span>•</span>
+                              <span className="flex items-center gap-0.5">
+                                <Eye className="w-3 h-3 text-tertiary" />
+                                {article.views}
+                              </span>
+                            </div>
+                            
+                            <h3 className="text-base md:text-lg font-bold text-on-surface group-hover:text-primary transition-colors tracking-tight line-clamp-2 leading-snug">
+                              <Link href={`/article/${article.slug}`}>
+                                {article.title}
+                              </Link>
+                            </h3>
+                            
+                            <p className="text-xs text-on-surface-variant line-clamp-3 leading-relaxed flex-grow">
+                              {article.excerpt}
+                            </p>
+                            
+                            <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+                              <div className="flex items-center gap-2">
+                                <div className="relative w-7 h-7 rounded-full overflow-hidden ring-1 ring-primary/30">
+                                  <img
+                                    src={article.author_avatar}
+                                    alt={article.author_name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=250&auto=format&fit=crop'; }}
+                                  />
+                                </div>
+                                <span className="text-[11px] font-semibold text-on-surface">{article.author_name}</span>
+                              </div>
+                              <Link
+                                href={`/article/${article.slug}`}
+                                className="text-xs font-bold text-primary flex items-center gap-0.5 hover:underline"
+                              >
+                                Read
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                              </Link>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
+
 
                   {/* Elegant Pagination Controls */}
                   {totalPages > 1 && (

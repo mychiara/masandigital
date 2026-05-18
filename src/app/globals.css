@@ -50,7 +50,136 @@
   }
 }
 
-/* Custom Premium UI/UX Aesthetic classes */
+/* ==========================================================================
+   DYNAMIC COLOR SCHEME AND ACCENT SYSTEM (LIGHT MODE / DEFAULT)
+   ========================================================================== */
+:root {
+  --bg-radial-1: rgba(37, 99, 235, 0.04);
+  --bg-radial-2: rgba(2, 132, 199, 0.04);
+}
+
+/* Emerald Green Theme (B) */
+html[data-color-scheme="green"] {
+  --color-primary: #047857;
+  --color-primary-fixed: #d1fae5;
+  --color-primary-fixed-dim: #a7f3d0;
+  --color-on-primary: #ffffff;
+  
+  --color-secondary: #059669;
+  --color-secondary-container: #6ee7b7;
+  --color-on-secondary: #ffffff;
+  
+  --color-tertiary: #0d9488;
+  --color-tertiary-fixed: #ccfbf1;
+  --color-on-tertiary: #ffffff;
+  
+  --bg-radial-1: rgba(5, 150, 105, 0.04);
+  --bg-radial-2: rgba(13, 148, 136, 0.04);
+}
+
+/* Amethyst Purple Theme (B) */
+html[data-color-scheme="purple"] {
+  --color-primary: #6d28d9;
+  --color-primary-fixed: #ede9fe;
+  --color-primary-fixed-dim: #ddd6fe;
+  --color-on-primary: #ffffff;
+  
+  --color-secondary: #7c3aed;
+  --color-secondary-container: #c4b5fd;
+  --color-on-secondary: #ffffff;
+  
+  --color-tertiary: #c026d3;
+  --color-tertiary-fixed: #fdf4ff;
+  --color-on-tertiary: #ffffff;
+  
+  --bg-radial-1: rgba(124, 58, 237, 0.04);
+  --bg-radial-2: rgba(192, 38, 211, 0.04);
+}
+
+/* Sunset Orange Theme (B) */
+html[data-color-scheme="orange"] {
+  --color-primary: #c2410c;
+  --color-primary-fixed: #ffedd5;
+  --color-primary-fixed-dim: #fed7aa;
+  --color-on-primary: #ffffff;
+  
+  --color-secondary: #ea580c;
+  --color-secondary-container: #fdba74;
+  --color-on-secondary: #ffffff;
+  
+  --color-tertiary: #d97706;
+  --color-tertiary-fixed: #fef3c7;
+  --color-on-tertiary: #ffffff;
+  
+  --bg-radial-1: rgba(234, 88, 12, 0.04);
+  --bg-radial-2: rgba(217, 119, 6, 0.04);
+}
+
+/* ==========================================================================
+   OBSIDIAN SLATE DARK MODE SYSTEM (A)
+   ========================================================================== */
+html[data-mode="dark"] {
+  --color-background: #0b0f19; /* Deep Slate Blue Dark */
+  --color-on-background: #f1f5f9; /* Soft White */
+  
+  --color-surface: #131b2e; /* Slate obsidian cards */
+  --color-on-surface: #f8fafc;
+  --color-surface-variant: #070a13; /* Contrast boxes */
+  --color-on-surface-variant: #94a3b8; /* Slate descriptions */
+  
+  --color-surface-container: #1e293b;
+  --color-surface-container-low: #131b2e;
+  --color-surface-container-lowest: #070a13;
+  --color-surface-container-high: #1e293b;
+  --color-surface-container-highest: #334155;
+  
+  --color-outline: #1e293b;
+  --color-outline-variant: #1e293b;
+  
+  /* Increased glow for high-impact night visuals */
+  --bg-radial-1: rgba(37, 99, 235, 0.07);
+  --bg-radial-2: rgba(2, 132, 199, 0.07);
+}
+
+/* Dynamic glow mappings per color scheme in dark mode */
+html[data-mode="dark"][data-color-scheme="green"] {
+  --bg-radial-1: rgba(5, 150, 105, 0.07);
+  --bg-radial-2: rgba(13, 148, 136, 0.07);
+}
+html[data-mode="dark"][data-color-scheme="purple"] {
+  --bg-radial-1: rgba(124, 58, 237, 0.07);
+  --bg-radial-2: rgba(192, 38, 211, 0.07);
+}
+html[data-mode="dark"][data-color-scheme="orange"] {
+  --bg-radial-1: rgba(234, 88, 12, 0.07);
+  --bg-radial-2: rgba(217, 119, 6, 0.07);
+}
+
+/* Dark Mode Typography Corrections */
+html[data-mode="dark"] .brand-gradient-text {
+  background: linear-gradient(135deg, #dbeafe 0%, var(--color-secondary) 50%, var(--color-primary-fixed-dim) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glassmorphism Dark Mode override */
+html[data-mode="dark"] .glassmorphism {
+  background: rgba(19, 27, 46, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Card dark mode overrides */
+html[data-mode="dark"] .neon-glow-card {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: #131b2e;
+}
+html[data-mode="dark"] .neon-glow-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+}
+
+/* Custom premium styles */
 .glassmorphism {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px);
@@ -68,22 +197,22 @@
 
 .neon-glow-card:hover {
   transform: translateY(-5px);
-  border-color: rgba(37, 99, 235, 0.25);
+  border-color: var(--color-primary);
   box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.12);
 }
 
 .brand-gradient-bg {
-  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #0284c7 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 50%, var(--color-tertiary) 100%);
 }
 
 .brand-gradient-text {
-  background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #0369a1 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 50%, var(--color-tertiary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .brand-gradient-border {
-  border-image: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) 1;
+  border-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) 1;
 }
 
 body {
@@ -92,8 +221,8 @@ body {
   font-family: var(--font-inter), sans-serif;
   scroll-behavior: smooth;
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.04) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(2, 132, 199, 0.04) 0%, transparent 40%);
+    radial-gradient(circle at 10% 20%, var(--bg-radial-1) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, var(--bg-radial-2) 0%, transparent 40%);
 }
 
 .reading-progress-container {
@@ -108,7 +237,7 @@ body {
 
 .reading-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #1d4ed8, #2563eb, #0284c7);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-tertiary));
   transition: width 0.1s ease-out;
 }
 
@@ -119,15 +248,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f0f4f8;
+  background: var(--color-background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border: 2px solid #f0f4f8;
+  background: var(--color-surface-container-highest);
+  border: 2px solid var(--color-background);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: var(--color-primary);
 }
+
