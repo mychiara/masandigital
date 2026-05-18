@@ -96,88 +96,6 @@ export const supabase = isSupabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-// Seed articles for localStorage fallback
-const SEED_ARTICLES: Article[] = [
-  {
-    id: '1',
-    title: 'The Quantum Leap in Modern Web Development',
-    slug: 'the-quantum-leap-in-modern-web-development',
-    excerpt: 'How quantum computing and AI are colliding to fundamentally redefine digital architecture, developer productivity, and user experience.',
-    content: `As we stand at the precipice of a new era in computing, the intersection of AI and development is creating ripples across the industry. Quantum computing is no longer a theoretical laboratory exercise; it is becoming the backbone of next-generation digital experiences.
-
-Current development paradigms focus heavily on optimization and edge delivery. However, the introduction of AI-driven code generation and quantum-ready algorithms is shifting the focus from 'how we build' to 'what we can imagine'.
-
-Web3 and decentralized systems further complicate the landscape, demanding developers to be more than just coders; they must be digital architects of trust and transparency.
-
-The transition from binary to qubit-based logic in everyday applications will be rapid. We should prepare for automated debugging through large language models specialized in security, shifting the burden of QA from humans to machines.`,
-    category: 'AI',
-    cover_image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1000&auto=format&fit=crop',
-    author_name: 'Marcus Vance',
-    author_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=250&auto=format&fit=crop',
-    reading_time: 12,
-    status: 'published',
-    views: 2420,
-    created_at: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
-    published_at: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Mastering Next.js 16 with Server Components',
-    slug: 'mastering-nextjs-16-with-server-components',
-    excerpt: 'A masterclass on harnessing React Server Components (RSC) and Next.js App Router caching to achieve near-instantaneous page loads.',
-    content: `React Server Components (RSC) represent a paradigm shift in how we build user interfaces for the web. By executing components on the server first, we eliminate bundle size overhead and stream content directly to clients for instant renders.
-
-Combined with Next.js App Router, developers gain fine-grained control over static rendering, dynamic data fetching, and partial routing layout retention.
-
-In this article, we dive deep into advanced caching topologies, streaming with suspense boundaries, and optimistic client state synchronization during database mutations.`,
-    category: 'Dev',
-    cover_image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop',
-    author_name: 'Andy Masan',
-    author_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
-    reading_time: 8,
-    status: 'published',
-    views: 1205,
-    created_at: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-    published_at: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Why Multi-Cloud is a Myth in 2026',
-    slug: 'why-multi-cloud-is-a-myth-in-2026',
-    excerpt: 'An analytical critique of contemporary enterprise cloud distribution strategies and why single-cloud with edge middleware wins.',
-    content: `Many enterprises advocate for a multi-cloud strategy to avoid vendor lock-in. However, the operational complexity, data egress costs, and developer friction of building for the lowest common denominator often dwarf any pricing leverage gained.
-
-Instead of spreading architectures thinly across AWS, GCP, and Azure, leading teams are choosing a "Single-Cloud, Multi-Edge" model, leveraging CDNs like Vercel and Cloudflare for performance while anchoring their primary databases in highly specialized clouds like Supabase.`,
-    category: 'Cloud',
-    cover_image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop',
-    author_name: 'Sarah Chen',
-    author_avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=250&auto=format&fit=crop',
-    reading_time: 6,
-    status: 'published',
-    views: 842,
-    created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-    published_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-  }
-];
-
-// Helper to get local articles
-const getLocalArticles = (): Article[] => {
-  if (typeof window === 'undefined') return SEED_ARTICLES;
-  const stored = localStorage.getItem('masandigital_articles');
-  if (!stored) {
-    localStorage.setItem('masandigital_articles', JSON.stringify(SEED_ARTICLES));
-    return SEED_ARTICLES;
-  }
-  return JSON.parse(stored);
-};
-
-// Helper to save local articles
-const saveLocalArticles = (articles: Article[]) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('masandigital_articles', JSON.stringify(articles));
-  }
-};
-
 // ==========================================
 // Advanced Sub-Millisecond In-Memory Caching System
 // ==========================================
@@ -185,7 +103,6 @@ const cache = {
   articles: null as { data: Article[]; timestamp: number } | null,
   articleBySlug: {} as Record<string, { data: Article | null; timestamp: number }>,
   settings: null as { data: SiteSettings; timestamp: number } | null,
-  
   clear() {
     this.articles = null;
     this.articleBySlug = {};
@@ -199,27 +116,6 @@ const pending = {
   settings: null as Promise<SiteSettings | null> | null,
 };
 
-// Offline Circuit Breaker State (Persisted in sessionStorage to prevent network console noise on refresh)
-const offlineBreaker = {
-  get isOffline(): boolean {
-    if (typeof window === 'undefined') return false;
-    return sessionStorage.getItem('masandigital_supabase_offline') === 'true';
-  },
-  set isOffline(val: boolean) {
-    if (typeof window === 'undefined') return;
-    sessionStorage.setItem('masandigital_supabase_offline', String(val));
-    if (val) {
-      sessionStorage.setItem('masandigital_supabase_offline_time', String(Date.now()));
-    }
-  },
-  get timestamp(): number {
-    if (typeof window === 'undefined') return 0;
-    return Number(sessionStorage.getItem('masandigital_supabase_offline_time') || '0');
-  }
-};
-
-const OFFLINE_COOLDOWN = 180000; // 3 minutes cooldown before trying to re-connect
-
 const CACHE_TTL = 30000; // 30 seconds caching window for ultimate performance
 
 export const db = {
@@ -227,56 +123,42 @@ export const db = {
 
   // Get all articles (supports filtering and search with high-speed in-memory cache)
   async getArticles(category?: string, search?: string): Promise<Article[]> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured. Please paste your valid API keys in .env.local");
+    }
+
     let allArticles: Article[] = [];
-    let querySucceeded = false;
     const nowTime = Date.now();
-    
-    // Check if we should bypass Supabase due to active circuit breaker
-    const shouldBypassSupabase = offlineBreaker.isOffline && (nowTime - offlineBreaker.timestamp < OFFLINE_COOLDOWN);
     
     if (cache.articles && (nowTime - cache.articles.timestamp < CACHE_TTL)) {
       allArticles = cache.articles.data;
     } else {
-      if (isSupabaseConfigured && supabase && !shouldBypassSupabase) {
-        if (!pending.articles) {
-          pending.articles = (async () => {
-            try {
-              const { data, error } = await supabase
-                .from('articles')
-                .select('*')
-                .order('created_at', { ascending: false });
-              if (!error && data) {
-                offlineBreaker.isOffline = false; // successfully connected!
-                return data as Article[];
-              }
-              if (error) throw error;
-            } catch (err) {
-              const errorMessage = typeof err === 'object' && err !== null
-                ? (err as any).message || JSON.stringify(err)
-                : String(err);
-              console.error('Supabase query failed, activating Offline Circuit Breaker:', errorMessage);
-              offlineBreaker.isOffline = true;
-            }
-            return null; // indicates connection/query failed
-          })();
-        }
-        
-        try {
-          const res = await pending.articles;
-          if (res !== null) {
-            allArticles = res;
-            querySucceeded = true;
+      if (!pending.articles) {
+        pending.articles = (async () => {
+          try {
+            const { data, error } = await supabase
+              .from('articles')
+              .select('*')
+              .order('created_at', { ascending: false });
+            if (error) throw error;
+            return (data as Article[]) || [];
+          } catch (err) {
+            const errorMessage = typeof err === 'object' && err !== null
+              ? (err as any).message || JSON.stringify(err)
+              : String(err);
+            console.error('Supabase getArticles query failed:', errorMessage);
+            throw new Error(`Failed to fetch articles from Supabase: ${errorMessage}`);
           }
-        } finally {
-          pending.articles = null; // reset for next request
-        }
-      } else if (shouldBypassSupabase) {
-        console.warn(`[masandigital.com] Supabase project is paused/offline. Offline Circuit Breaker active. serving from localStorage/seed in 0ms.`);
+        })();
       }
       
-      // Fallback: Only load seed/local articles if the database connection/query failed (or not configured)
-      if (!querySucceeded) {
-        allArticles = getLocalArticles();
+      try {
+        const res = await pending.articles;
+        if (res !== null) {
+          allArticles = res;
+        }
+      } finally {
+        pending.articles = null; // reset for next request
       }
 
       cache.articles = { data: allArticles, timestamp: nowTime };
@@ -295,32 +177,30 @@ export const db = {
 
   // Get a single article by slug (utilizes in-memory cache)
   async getArticleBySlug(slug: string): Promise<Article | null> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured. Please paste your valid API keys in .env.local");
+    }
+
     const nowTime = Date.now();
     if (cache.articleBySlug[slug] && (nowTime - cache.articleBySlug[slug].timestamp < CACHE_TTL)) {
       return cache.articleBySlug[slug].data;
     }
 
     let article: Article | null = null;
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('articles')
-          .select('*')
-          .eq('slug', slug)
-          .maybeSingle();
-        if (!error && data) {
-          article = data as Article;
-        } else if (error) {
-          throw error;
-        }
-      } catch (err) {
-        console.error('Supabase query failed, falling back to local:', err);
-      }
-    }
-
-    if (!article) {
-      const articles = getLocalArticles();
-      article = articles.find(a => a.slug === slug) || null;
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle();
+      if (error) throw error;
+      article = data as Article;
+    } catch (err) {
+      const errorMessage = typeof err === 'object' && err !== null
+        ? (err as any).message || JSON.stringify(err)
+        : String(err);
+      console.error(`Supabase getArticleBySlug (${slug}) query failed:`, errorMessage);
+      throw new Error(`Failed to fetch article by slug: ${errorMessage}`);
     }
 
     cache.articleBySlug[slug] = { data: article, timestamp: nowTime };
@@ -329,6 +209,10 @@ export const db = {
 
   // Create article (invalidates cache)
   async createArticle(articleData: Partial<Article>): Promise<Article> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured. Please paste your valid API keys in .env.local");
+    }
+
     // Clear cache immediately
     cache.clear();
 
@@ -336,8 +220,7 @@ export const db = {
       ? articleData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
       : 'untitled-' + Math.random().toString(36).substr(2, 5);
 
-    const newArticle: Article = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newArticlePayload: Partial<Article> = {
       title: articleData.title || 'Untitled',
       slug,
       content: articleData.content || '',
@@ -349,349 +232,271 @@ export const db = {
       reading_time: articleData.reading_time || 5,
       status: articleData.status || 'published',
       views: 0,
-      created_at: new Date().toISOString(),
       published_at: articleData.published_at || new Date().toISOString(),
       keywords: articleData.keywords || '',
       comments_enabled: articleData.comments_enabled !== undefined ? articleData.comments_enabled : true,
     };
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const dbRow: Partial<Article> = { ...newArticle };
-        delete dbRow.id;
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .insert([newArticlePayload])
+        .select()
+        .maybeSingle();
         
-        const { data, error } = await supabase
+      if (error) {
+        console.warn('First articles insert failed, retrying without keywords & comments_enabled columns:', error);
+        const fallbackRow = { ...newArticlePayload };
+        delete fallbackRow.keywords;
+        delete fallbackRow.comments_enabled;
+        
+        const { data: fallbackData, error: retryError } = await supabase
           .from('articles')
-          .insert([dbRow])
+          .insert([fallbackRow])
           .select()
-          .maybeSingle();
-          
-        if (error) {
-          console.warn('First articles insert failed, retrying without keywords & comments_enabled columns:', error);
-          const fallbackRow = { ...dbRow };
-          delete fallbackRow.keywords;
-          delete fallbackRow.comments_enabled;
-          
-          const { data: fallbackData, error: retryError } = await supabase
-            .from('articles')
-            .insert([fallbackRow])
-            .select()
-            .single();
-          if (retryError) throw retryError;
-          return fallbackData as Article;
-        }
-        return data as Article;
-      } catch (err) {
-        console.error('Supabase insert failed, inserting to local database:', err);
+          .single();
+        if (retryError) throw retryError;
+        return fallbackData as Article;
       }
+      if (!data) throw new Error("No data returned from article creation");
+      return data as Article;
+    } catch (err) {
+      const errorMessage = typeof err === 'object' && err !== null
+        ? (err as any).message || JSON.stringify(err)
+        : String(err);
+      console.error('Supabase createArticle failed:', errorMessage);
+      throw new Error(`Failed to create article in Supabase: ${errorMessage}`);
     }
-
-    const articles = getLocalArticles();
-    articles.unshift(newArticle);
-    saveLocalArticles(articles);
-    return newArticle;
   },
 
   // Update article (invalidates cache)
   async updateArticle(id: string, articleData: Partial<Article>): Promise<Article> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured. Please paste your valid API keys in .env.local");
+    }
+
     // Clear cache immediately
     cache.clear();
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .update(articleData)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+        
+      if (error) {
+        console.warn('First articles update failed, retrying without keywords & comments_enabled columns:', error);
+        const fallbackPayload = { ...articleData };
+        delete fallbackPayload.keywords;
+        delete fallbackPayload.comments_enabled;
+        
+        const { data: fallbackData, error: retryError } = await supabase
           .from('articles')
-          .update(articleData)
+          .update(fallbackPayload)
           .eq('id', id)
           .select()
-          .maybeSingle();
-          
-        if (error) {
-          console.warn('First articles update failed, retrying without keywords & comments_enabled columns:', error);
-          const fallbackPayload = { ...articleData };
-          delete fallbackPayload.keywords;
-          delete fallbackPayload.comments_enabled;
-          
-          const { data: fallbackData, error: retryError } = await supabase
-            .from('articles')
-            .update(fallbackPayload)
-            .eq('id', id)
-            .select()
-            .single();
-          if (retryError) throw retryError;
-          return fallbackData as Article;
-        }
-        return data as Article;
-      } catch (err) {
-        console.error('Supabase update failed, updating locally:', err);
+          .single();
+        if (retryError) throw retryError;
+        return fallbackData as Article;
       }
+      if (!data) throw new Error("No data returned from article update");
+      return data as Article;
+    } catch (err) {
+      const errorMessage = typeof err === 'object' && err !== null
+        ? (err as any).message || JSON.stringify(err)
+        : String(err);
+      console.error(`Supabase updateArticle (${id}) failed:`, errorMessage);
+      throw new Error(`Failed to update article in Supabase: ${errorMessage}`);
     }
-
-    const articles = getLocalArticles();
-    const index = articles.findIndex(a => a.id === id);
-    if (index === -1) throw new Error('Article not found');
-    
-    const updatedArticle = {
-      ...articles[index],
-      ...articleData,
-    };
-    
-    articles[index] = updatedArticle;
-    saveLocalArticles(articles);
-    return updatedArticle;
   },
 
   // Delete article (invalidates cache)
   async deleteArticle(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured. Please paste your valid API keys in .env.local");
+    }
+
     // Clear cache immediately
     cache.clear();
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { error } = await supabase
-          .from('articles')
-          .delete()
-          .eq('id', id);
-        if (error) throw error;
-        return true;
-      } catch (err) {
-        console.error('Supabase delete failed, deleting locally:', err);
-      }
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      const errorMessage = typeof err === 'object' && err !== null
+        ? (err as any).message || JSON.stringify(err)
+        : String(err);
+      console.error(`Supabase deleteArticle (${id}) failed:`, errorMessage);
+      throw new Error(`Failed to delete article in Supabase: ${errorMessage}`);
     }
-
-    const articles = getLocalArticles();
-    const filtered = articles.filter(a => a.id !== id);
-    saveLocalArticles(filtered);
-    return true;
   },
 
   // Increment views (quietly updates cache)
   async incrementViews(id: string): Promise<number> {
-    // We do not call cache.clear() to avoid bypass during high load, but we update the in-memory views count!
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data: current } = await supabase.from('articles').select('views').eq('id', id).single();
-        const nextViews = (current?.views || 0) + 1;
-        await supabase.from('articles').update({ views: nextViews }).eq('id', id);
-        
-        // Quietly update our cached views count
-        if (cache.articles) {
-          const item = cache.articles.data.find(a => a.id === id);
-          if (item) item.views = nextViews;
-        }
-        
-        return nextViews;
-      } catch (err) {
-        console.error('Supabase increment views failed:', err);
-      }
-    }
+    if (!isSupabaseConfigured || !supabase) return 0;
 
-    const articles = getLocalArticles();
-    const index = articles.findIndex(a => a.id === id);
-    if (index !== -1) {
-      articles[index].views += 1;
-      saveLocalArticles(articles);
+    try {
+      const { data: current } = await supabase.from('articles').select('views').eq('id', id).single();
+      const nextViews = (current?.views || 0) + 1;
+      await supabase.from('articles').update({ views: nextViews }).eq('id', id);
       
       // Quietly update our cached views count
       if (cache.articles) {
         const item = cache.articles.data.find(a => a.id === id);
-        if (item) item.views = articles[index].views;
+        if (item) item.views = nextViews;
       }
       
-      return articles[index].views;
+      return nextViews;
+    } catch (err) {
+      console.error(`Supabase incrementViews (${id}) failed silently:`, err);
+      return 0;
     }
-    return 0;
   },
 
   // Get site settings (utilizes cache)
   async getSettings(): Promise<SiteSettings> {
-    const nowTime = Date.now();
-    const shouldBypassSupabase = offlineBreaker.isOffline && (nowTime - offlineBreaker.timestamp < OFFLINE_COOLDOWN);
+    if (!isSupabaseConfigured || !supabase) {
+      return DEFAULT_SETTINGS; // Return defaults if not configured
+    }
 
+    const nowTime = Date.now();
     if (cache.settings && (nowTime - cache.settings.timestamp < CACHE_TTL)) {
       return cache.settings.data;
     }
 
     let settings: SiteSettings | null = null;
-    if (isSupabaseConfigured && supabase && !shouldBypassSupabase) {
-      if (!pending.settings) {
-        pending.settings = (async () => {
-          try {
-            const { data, error } = await supabase.from('settings').select('*').limit(1).maybeSingle();
-            if (!error && data) {
-              offlineBreaker.isOffline = false; // successfully connected!
-              const parsedPlacements = typeof data.ads_placements === 'string' 
-                ? JSON.parse(data.ads_placements) 
-                : data.ads_placements;
-                
-              let localLimit = 6;
-              if (typeof window !== 'undefined') {
-                const stored = localStorage.getItem('masandigital_settings');
-                if (stored) {
-                  try {
-                    const parsed = JSON.parse(stored);
-                    if (parsed.homepage_limit !== undefined && parsed.homepage_limit !== null) {
-                      localLimit = Number(parsed.homepage_limit);
-                    }
-                  } catch {
-                    // Safe fallback
-                  }
-                }
-              }
-
-              return {
-                ...DEFAULT_SETTINGS,
-                ...data,
-                ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements,
-                homepage_limit: data.homepage_limit !== undefined && data.homepage_limit !== null
-                  ? Number(data.homepage_limit) 
-                  : localLimit
-              } as SiteSettings;
-            }
-          } catch (err) {
-            const errorMessage = typeof err === 'object' && err !== null
-              ? (err as any).message || JSON.stringify(err)
-              : String(err);
-            console.warn('Supabase settings query failed, activating Offline Circuit Breaker:', errorMessage);
-            offlineBreaker.isOffline = true;
+    if (!pending.settings) {
+      pending.settings = (async () => {
+        try {
+          const { data, error } = await supabase.from('settings').select('*').limit(1).maybeSingle();
+          if (error) throw error;
+          if (data) {
+            const parsedPlacements = typeof data.ads_placements === 'string' 
+              ? JSON.parse(data.ads_placements) 
+              : data.ads_placements;
+              
+            return {
+              ...DEFAULT_SETTINGS,
+              ...data,
+              ads_placements: parsedPlacements || DEFAULT_SETTINGS.ads_placements,
+              homepage_limit: data.homepage_limit !== undefined && data.homepage_limit !== null
+                ? Number(data.homepage_limit) 
+                : 6
+            } as SiteSettings;
           }
-          return null;
-        })();
-      }
+          return null; // No settings found in DB
+        } catch (err) {
+          const errorMessage = typeof err === 'object' && err !== null
+            ? (err as any).message || JSON.stringify(err)
+            : String(err);
+          console.error('Supabase getSettings query failed:', errorMessage);
+          throw new Error(`Failed to fetch settings from Supabase: ${errorMessage}`);
+        }
+      })();
+    }
 
-      try {
-        settings = await pending.settings;
-      } finally {
-        pending.settings = null; // reset for next request
-      }
-    } else if (shouldBypassSupabase) {
-      console.warn('[masandigital.com] Bypassing settings Supabase query - Offline Circuit Breaker active.');
+    try {
+      settings = await pending.settings;
+    } finally {
+      pending.settings = null; // reset for next request
     }
     
     if (!settings) {
-      if (typeof window === 'undefined') {
-        settings = DEFAULT_SETTINGS;
-      } else {
-        const stored = localStorage.getItem('masandigital_settings');
-        if (!stored) {
-          localStorage.setItem('masandigital_settings', JSON.stringify(DEFAULT_SETTINGS));
-          settings = DEFAULT_SETTINGS;
-        } else {
-          settings = JSON.parse(stored);
-        }
-      }
+      settings = DEFAULT_SETTINGS;
     }
 
-    cache.settings = { data: settings!, timestamp: nowTime };
-    return settings!;
+    cache.settings = { data: settings, timestamp: nowTime };
+    return settings;
   },
 
   // Save site settings (invalidates cache)
   async saveSettings(settings: SiteSettings): Promise<SiteSettings> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured. Please paste your valid API keys in .env.local");
+    }
+
     // Clear cache immediately
     cache.clear();
 
-    const nowTime = Date.now();
-    const shouldBypassSupabase = offlineBreaker.isOffline && (nowTime - offlineBreaker.timestamp < OFFLINE_COOLDOWN);
+    try {
+      const { data: existing } = await supabase.from('settings').select('id').limit(1).maybeSingle();
+      
+      const payload: Record<string, unknown> = {
+        site_title: settings.site_title,
+        site_tagline: settings.site_tagline,
+        site_logo: settings.site_logo,
+        site_icon: settings.site_icon,
+        google_indexing_enabled: settings.google_indexing_enabled,
+        google_indexing_json: settings.google_indexing_json,
+        bing_api_key: settings.bing_api_key,
+        google_site_verification: settings.google_site_verification,
+        ads_enabled: settings.ads_enabled,
+        ads_script_code: settings.ads_script_code,
+        ads_placements: settings.ads_placements,
+        tracking_header_code: settings.tracking_header_code,
+        tracking_footer_code: settings.tracking_footer_code,
+        about_content: settings.about_content,
+        contact_email: settings.contact_email,
+        contact_phone: settings.contact_phone,
+        contact_address: settings.contact_address,
+        contact_hours: settings.contact_hours,
+        disclaimer_content: settings.disclaimer_content,
+        privacy_content: settings.privacy_content,
+        tos_content: settings.tos_content,
+        categories: settings.categories,
+        homepage_limit: settings.homepage_limit !== undefined ? Number(settings.homepage_limit) : 6
+      };
 
-    // Always synchronize with localStorage first for client state resilience
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('masandigital_settings', JSON.stringify(settings));
-    }
-
-    if (isSupabaseConfigured && supabase && !shouldBypassSupabase) {
-      try {
-        const { data: existing } = await supabase.from('settings').select('id').limit(1).maybeSingle();
+      if (existing) {
+        const { error } = await supabase.from('settings').update(payload).eq('id', existing.id);
         
-        const payload: Record<string, unknown> = {
-          site_title: settings.site_title,
-          site_tagline: settings.site_tagline,
-          site_logo: settings.site_logo,
-          site_icon: settings.site_icon,
-          google_indexing_enabled: settings.google_indexing_enabled,
-          google_indexing_json: settings.google_indexing_json,
-          bing_api_key: settings.bing_api_key,
-          google_site_verification: settings.google_site_verification,
-          ads_enabled: settings.ads_enabled,
-          ads_script_code: settings.ads_script_code,
-          ads_placements: settings.ads_placements,
-          tracking_header_code: settings.tracking_header_code,
-          tracking_footer_code: settings.tracking_footer_code,
-          about_content: settings.about_content,
-          contact_email: settings.contact_email,
-          contact_phone: settings.contact_phone,
-          contact_address: settings.contact_address,
-          contact_hours: settings.contact_hours,
-          disclaimer_content: settings.disclaimer_content,
-          privacy_content: settings.privacy_content,
-          tos_content: settings.tos_content,
-          categories: settings.categories,
-          homepage_limit: settings.homepage_limit !== undefined ? Number(settings.homepage_limit) : 6
-        };
-
-        if (existing) {
-          const { error } = await supabase.from('settings').update(payload).eq('id', existing.id);
+        if (error) {
+          console.warn('First settings update failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
+          const fallbackPayload = { ...payload };
+          delete fallbackPayload.site_logo;
+          delete fallbackPayload.site_icon;
+          delete fallbackPayload.google_indexing_enabled;
+          delete fallbackPayload.google_indexing_json;
+          delete fallbackPayload.bing_api_key;
+          delete fallbackPayload.google_site_verification;
+          delete fallbackPayload.categories;
+          delete fallbackPayload.homepage_limit;
           
-          if (error) {
-            console.warn('First settings update failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
-            const fallbackPayload = { ...payload };
-            delete fallbackPayload.site_logo;
-            delete fallbackPayload.site_icon;
-            delete fallbackPayload.google_indexing_enabled;
-            delete fallbackPayload.google_indexing_json;
-            delete fallbackPayload.bing_api_key;
-            delete fallbackPayload.google_site_verification;
-            delete fallbackPayload.categories;
-            delete fallbackPayload.homepage_limit;
-            
-            const { error: retryError } = await supabase.from('settings').update(fallbackPayload).eq('id', existing.id);
-            if (!retryError) {
-              offlineBreaker.isOffline = false; // connection works!
-              return settings;
-            }
-          } else {
-            offlineBreaker.isOffline = false; // connection works!
-            return settings;
-          }
-        } else {
-          const { error } = await supabase.from('settings').insert([payload]);
-          
-          if (error) {
-            console.warn('First settings insert failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
-            const fallbackPayload = { ...payload };
-            delete fallbackPayload.site_logo;
-            delete fallbackPayload.site_icon;
-            delete fallbackPayload.google_indexing_enabled;
-            delete fallbackPayload.google_indexing_json;
-            delete fallbackPayload.bing_api_key;
-            delete fallbackPayload.google_site_verification;
-            delete fallbackPayload.categories;
-            delete fallbackPayload.homepage_limit;
-            
-            const { error: retryError } = await supabase.from('settings').insert([fallbackPayload]);
-            if (!retryError) {
-              offlineBreaker.isOffline = false; // connection works!
-              return settings;
-            }
-          } else {
-            offlineBreaker.isOffline = false; // connection works!
-            return settings;
-          }
+          const { error: retryError } = await supabase.from('settings').update(fallbackPayload).eq('id', existing.id);
+          if (retryError) throw retryError;
         }
-      } catch (err) {
-        const errorMessage = typeof err === 'object' && err !== null
-          ? (err as any).message || JSON.stringify(err)
-          : String(err);
-        console.error('Supabase settings update failed, activating Offline Circuit Breaker:', errorMessage);
-        offlineBreaker.isOffline = true;
+      } else {
+        const { error } = await supabase.from('settings').insert([payload]);
+        
+        if (error) {
+          console.warn('First settings insert failed, retrying without site_logo, site_icon, indexing, homepage_limit and categories columns:', error);
+          const fallbackPayload = { ...payload };
+          delete fallbackPayload.site_logo;
+          delete fallbackPayload.site_icon;
+          delete fallbackPayload.google_indexing_enabled;
+          delete fallbackPayload.google_indexing_json;
+          delete fallbackPayload.bing_api_key;
+          delete fallbackPayload.google_site_verification;
+          delete fallbackPayload.categories;
+          delete fallbackPayload.homepage_limit;
+          
+          const { error: retryError } = await supabase.from('settings').insert([fallbackPayload]);
+          if (retryError) throw retryError;
+        }
       }
-    } else if (shouldBypassSupabase) {
-      console.warn('[masandigital.com] Bypassing settings Supabase save - Offline Circuit Breaker active.');
+      return settings;
+    } catch (err) {
+      const errorMessage = typeof err === 'object' && err !== null
+        ? (err as any).message || JSON.stringify(err)
+        : String(err);
+      console.error('Supabase settings update failed:', errorMessage);
+      throw new Error(`Failed to save settings to Supabase: ${errorMessage}`);
     }
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('masandigital_settings', JSON.stringify(settings));
-    }
-    return settings;
   }
 };
