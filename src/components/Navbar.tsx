@@ -67,6 +67,14 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
     router.refresh();
   };
 
+  // Split categories into exactly 3 rows
+  const chunkSize = Math.ceil(categories.length / 3);
+  const rows = [
+    categories.slice(0, chunkSize),
+    categories.slice(chunkSize, chunkSize * 2),
+    categories.slice(chunkSize * 2),
+  ].filter(row => row.length > 0);
+
   return (
     <header className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 glassmorphism rounded-2xl shadow-xl shadow-black/30 transition-all duration-300">
       {/* Hide Scrollbars for Categories horizontal scroll */}
@@ -76,7 +84,7 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
         }
       `}} />
 
-      <div className="px-6 lg:px-8 flex justify-between items-center h-24 gap-4">
+      <div className="px-6 lg:px-8 flex justify-between items-center min-h-[6rem] py-3.5 gap-4">
         
         {/* Brand Logo */}
         <Link href="/" className="flex items-center shrink-0">
@@ -97,29 +105,36 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
           )}
         </Link>
  
-        {/* Desktop Navigation (Flexible Center Categories Row) */}
+        {/* Desktop Navigation (Flexible Center Categories in 3 Rows) */}
         {onCategoryChange && (
-          <nav 
-            className="hidden md:flex gap-6 items-center overflow-x-auto scrollbar-none flex-1 max-w-[45%] lg:max-w-[55%] py-2 px-1 justify-start md:justify-center"
-            style={{
-              msOverflowStyle: 'none',
-              scrollbarWidth: 'none',
-            }}
+          <div 
+            className="hidden md:flex flex-col gap-1.5 items-center justify-center flex-1 max-w-[45%] lg:max-w-[55%] py-1"
           >
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => onCategoryChange(cat)}
-                className={`font-bold text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-200 ease-in-out border-b-2 pb-1 cursor-pointer shrink-0 ${
-                  (activeCategory || 'All') === cat
-                    ? 'text-primary border-primary shadow-sm shadow-primary/10'
-                    : 'text-on-surface-variant/80 border-transparent hover:text-primary hover:border-primary/50'
-                }`}
+            {rows.map((row, rowIndex) => (
+              <nav 
+                key={rowIndex}
+                className="flex gap-4 lg:gap-6 items-center justify-center w-full overflow-x-auto scrollbar-none py-0.5"
+                style={{
+                  msOverflowStyle: 'none',
+                  scrollbarWidth: 'none',
+                }}
               >
-                {cat}
-              </button>
+                {row.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => onCategoryChange(cat)}
+                    className={`font-bold text-[10px] lg:text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-200 ease-in-out border-b-[1.5px] pb-0.5 cursor-pointer shrink-0 ${
+                      (activeCategory || 'All') === cat
+                        ? 'text-primary border-primary shadow-sm shadow-primary/10'
+                        : 'text-on-surface-variant/80 border-transparent hover:text-primary hover:border-primary/50'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </nav>
             ))}
-          </nav>
+          </div>
         )}
  
         {/* Search & Actions */}
