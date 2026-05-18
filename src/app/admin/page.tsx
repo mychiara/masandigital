@@ -2867,21 +2867,55 @@ export default function AdminDashboard() {
                         </div>
 
                         {googleIndexingEnabled && (
-                          <div className="space-y-2 pt-2 border-t border-outline-variant/10 animate-in fade-in slide-in-from-top-1 duration-200">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5 font-sans">
-                              <FileJson className="w-3.5 h-3.5 text-primary" />
-                              Service Account Credentials Key (JSON)
-                            </label>
-                            <p className="text-[10px] text-on-surface-variant/80 font-sans leading-relaxed">
-                              Masukkan kredensial Service Account Key JSON yang Anda unduh dari Google Cloud Console. Kunci ini dibutuhkan untuk mengautentikasi pengiriman payload URL secara aman.
-                            </p>
-                            <textarea
-                              rows={8}
-                              value={googleIndexingJson}
-                              onChange={(e) => setGoogleIndexingJson(e.target.value)}
-                              placeholder={`{\n  "type": "service_account",\n  "project_id": "masandigital-portal",\n  "private_key_id": "xxxxxxxxxxxxxxxxxxxx",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...",\n  "client_email": "crawler-bot@masandigital-portal.iam.gserviceaccount.com"\n}`}
-                              className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-[10px] font-mono text-on-surface focus:outline-none leading-relaxed transition-all"
-                            />
+                          <div className="space-y-4 pt-2 border-t border-outline-variant/10 animate-in fade-in slide-in-from-top-1 duration-200">
+                            
+                            {/* Detailed Setup Guide */}
+                            <details className="group border border-outline-variant/20 bg-background/50 rounded-xl p-3.5 transition-all font-sans text-xs">
+                              <summary className="font-extrabold text-[10px] uppercase tracking-wider text-primary cursor-pointer flex justify-between items-center select-none">
+                                <span className="flex items-center gap-1">📖 LANGKAH DETAIL PEMBUATAN GOOGLE INDEXING API (PENTING)</span>
+                                <span className="transition-transform group-open:rotate-180">▼</span>
+                              </summary>
+                              <div className="mt-3.5 space-y-2.5 text-on-surface-variant/90 leading-relaxed font-sans text-[11px] border-t border-outline-variant/10 pt-3">
+                                <p>Ikuti panduan berikut dengan sangat teliti untuk mengaktifkan perayapan otomatis Googlebot:</p>
+                                <ol className="list-decimal pl-4.5 space-y-2">
+                                  <li>
+                                    <strong>Buat Proyek di Google Cloud:</strong> Buka <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary font-bold underline hover:opacity-85">Google Cloud Console</a>. Masuk dengan akun Google Anda dan klik <strong>New Project (Proyek Baru)</strong> dengan nama <code>Masandigital Portal</code>.
+                                  </li>
+                                  <li>
+                                    <strong>Aktifkan API Indexing:</strong> Navigasi ke menu samping kiri, klik <strong>APIs &amp; Services</strong> &rarr; <strong>Library</strong>. Cari <code>Web Search Indexing API</code> di kolom pencarian, lalu klik tombol <strong>Enable (Aktifkan)</strong>.
+                                  </li>
+                                  <li>
+                                    <strong>Buat Akun Layanan (Service Account):</strong> Masuk ke menu <strong>IAM &amp; Admin</strong> &rarr; <strong>Service Accounts</strong>. Klik tombol <strong>+ Create Service Account</strong> di bagian atas. Isi nama akun (misal: <code>masandigital-crawler</code>), klik <strong>Create and Continue</strong>, lalu langsung klik <strong>Done</strong> di bagian akhir.
+                                  </li>
+                                  <li>
+                                    <strong>Unduh File Kunci JSON:</strong> Di daftar Service Accounts, klik pada email akun layanan yang baru saja dibuat. Masuk ke tab <strong>Keys (Kunci)</strong> &rarr; klik <strong>Add Key</strong> &rarr; <strong>Create New Key</strong>. Pilih format <strong>JSON</strong> dan klik <strong>Create</strong>. File kredensial JSON akan otomatis terunduh ke komputer Anda. Buka file tersebut dengan Notepad/VS Code, salin seluruh isinya, dan tempelkan ke kolom input di bawah ini.
+                                  </li>
+                                  <li>
+                                    <strong>Berikan Hak Akses Owner di Search Console:</strong> Salin email akun layanan Anda (contoh: <code>masandigital-crawler@masandigital-portal.iam.gserviceaccount.com</code>). Buka <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary font-bold underline hover:opacity-85">Google Search Console</a>, pilih properti domain Anda, masuk ke <strong>Settings (Setelan)</strong> &rarr; <strong>Users and Associations (Pengguna dan Asosiasi)</strong> &rarr; klik <strong>Add User (Tambah Pengguna)</strong>. Tempel email akun layanan tersebut, setel hak aksesnya menjadi <strong>Owner (Pemilik)</strong>, lalu klik <strong>Add</strong>.
+                                  </li>
+                                </ol>
+                                <div className="p-2.5 bg-yellow-500/10 border border-yellow-500/20 text-yellow-800 rounded-xl text-[10px] font-medium leading-relaxed mt-1">
+                                  <strong>⚠️ CATATAN VITAL:</strong> Tanpa memberikan izin <strong>Owner</strong> di Google Search Console, Google API Gateway akan menolak request indexing dengan kode error 403 (Forbidden).
+                                </div>
+                              </div>
+                            </details>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5 font-sans">
+                                <FileJson className="w-3.5 h-3.5 text-primary" />
+                                Service Account Credentials Key (JSON)
+                              </label>
+                              <p className="text-[10px] text-on-surface-variant/80 font-sans leading-relaxed">
+                                Masukkan kredensial Service Account Key JSON yang Anda unduh dari Google Cloud Console. Kunci ini dibutuhkan untuk mengautentikasi pengiriman payload URL secara aman.
+                              </p>
+                              <textarea
+                                rows={8}
+                                value={googleIndexingJson}
+                                onChange={(e) => setGoogleIndexingJson(e.target.value)}
+                                placeholder={`{\n  "type": "service_account",\n  "project_id": "masandigital-portal",\n  "private_key_id": "xxxxxxxxxxxxxxxxxxxx",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...",\n  "client_email": "crawler-bot@masandigital-portal.iam.gserviceaccount.com"\n}`}
+                                className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-[10px] font-mono text-on-surface focus:outline-none leading-relaxed transition-all"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2901,24 +2935,52 @@ export default function AdminDashboard() {
                           </span>
                         </div>
 
-                        <div className="space-y-2 pt-2 border-t border-outline-variant/10">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5 font-sans">
-                            <Key className="w-3.5 h-3.5 text-primary" />
-                            Bing Webmaster API Key
-                          </label>
-                          <p className="text-[10px] text-on-surface-variant/80 font-sans leading-relaxed">
-                            API Key ini dapat Anda salin dari dashboard **Bing Webmaster Tools** -&gt; **Settings** -&gt; **API Access** -&gt; **API Key**.
-                          </p>
-                          <div className="relative">
-                            <input
-                              type="password"
-                              value={bingApiKey}
-                              onChange={(e) => setBingApiKey(e.target.value)}
-                              placeholder="e.g. b89c565d78a9c402123efd56e7118abc"
-                              className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none transition-all font-mono"
-                            />
-                            <div className="absolute right-3 top-2.5 text-on-surface-variant/50 hover:text-primary cursor-pointer transition-colors p-1">
-                              <Key className="w-4 h-4" />
+                        <div className="space-y-4 pt-2 border-t border-outline-variant/10">
+                          
+                          {/* Detailed Setup Guide */}
+                          <details className="group border border-outline-variant/20 bg-background/50 rounded-xl p-3.5 transition-all font-sans text-xs">
+                            <summary className="font-extrabold text-[10px] uppercase tracking-wider text-primary cursor-pointer flex justify-between items-center select-none">
+                              <span className="flex items-center gap-1">📖 LANGKAH DETAIL MENDAPATKAN BING API KEY</span>
+                              <span className="transition-transform group-open:rotate-180">▼</span>
+                            </summary>
+                            <div className="mt-3.5 space-y-2.5 text-on-surface-variant/90 leading-relaxed font-sans text-[11px] border-t border-outline-variant/10 pt-3">
+                              <p>Bing menggunakan protokol <strong>IndexNow</strong> yang langsung meneruskan URL baru ke Yahoo! dan DuckDuckGo:</p>
+                              <ol className="list-decimal pl-4.5 space-y-2">
+                                <li>
+                                  <strong>Buka Bing Webmaster:</strong> Kunjungi <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary font-bold underline hover:opacity-85">Bing Webmaster Tools</a> dan login.
+                                </li>
+                                <li>
+                                  <strong>Tambahkan Domain Anda:</strong> Pastikan domain <code>masandigital.com</code> terdaftar. Anda bisa langsung melakukan import properti secara instan dari akun Google Search Console Anda.
+                                </li>
+                                <li>
+                                  <strong>Salin API Key Anda:</strong> Klik ikon roda gigi <strong>Settings (Pengaturan)</strong> di pojok kanan atas layar dashboard Bing Webmaster Tools &rarr; pilih <strong>API Access</strong> &rarr; klik <strong>API Key</strong>.
+                                </li>
+                                <li>
+                                  <strong>Aktifkan &amp; Salin:</strong> Klik <strong>Generate</strong> jika belum pernah dibuat sebelumnya, kemudian salin kodenya dan tempelkan pada kolom input di bawah ini.
+                                </li>
+                              </ol>
+                            </div>
+                          </details>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5 font-sans">
+                              <Key className="w-3.5 h-3.5 text-primary" />
+                              Bing Webmaster API Key
+                            </label>
+                            <p className="text-[10px] text-on-surface-variant/80 font-sans leading-relaxed">
+                              API Key ini dapat Anda salin dari dashboard **Bing Webmaster Tools** -&gt; **Settings** -&gt; **API Access** -&gt; **API Key**.
+                            </p>
+                            <div className="relative">
+                              <input
+                                type="password"
+                                value={bingApiKey}
+                                onChange={(e) => setBingApiKey(e.target.value)}
+                                placeholder="e.g. b89c565d78a9c402123efd56e7118abc"
+                                className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none transition-all font-mono"
+                              />
+                              <div className="absolute right-3 top-2.5 text-on-surface-variant/50 hover:text-primary cursor-pointer transition-colors p-1">
+                                <Key className="w-4 h-4" />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -2939,40 +3001,72 @@ export default function AdminDashboard() {
                           </span>
                         </div>
 
-                        <div className="space-y-2 pt-2 border-t border-outline-variant/10">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5 font-sans">
-                            <Globe className="w-3.5 h-3.5 text-primary" />
-                            GSC Verification Code / Meta Content
-                          </label>
-                          <p className="text-[10px] text-on-surface-variant/80 font-sans leading-relaxed">
-                            Masukkan kode verifikasi HTML Tag yang diberikan oleh Google. Cukup masukkan nilai <code className="bg-surface-container-low px-1.5 py-0.5 rounded text-primary font-mono text-[9px]">content="..."</code> atau salin kode lengkapnya, kami akan memprosesnya secara otomatis!
-                          </p>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={googleSiteVerification}
-                              onChange={(e) => {
-                                // Extract content value if they paste the whole HTML tag
-                                const val = e.target.value;
-                                if (val.includes('content=')) {
-                                  const match = val.match(/content="([^"]+)"/);
-                                  if (match && match[1]) {
-                                    setGoogleSiteVerification(match[1]);
-                                    return;
-                                  }
-                                }
-                                setGoogleSiteVerification(val);
-                              }}
-                              placeholder="e.g. wR1V2xxxxxxxxxxxxxx_xxxxxxxxxxxxxxx"
-                              className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none transition-all font-mono"
-                            />
-                            <div className="absolute right-3 top-2.5 text-on-surface-variant/50 hover:text-primary cursor-pointer transition-colors p-1">
-                              <Globe className="w-4 h-4" />
+                        <div className="space-y-4 pt-2 border-t border-outline-variant/10">
+                          
+                          {/* Detailed Setup Guide */}
+                          <details className="group border border-outline-variant/20 bg-background/50 rounded-xl p-3.5 transition-all font-sans text-xs">
+                            <summary className="font-extrabold text-[10px] uppercase tracking-wider text-primary cursor-pointer flex justify-between items-center select-none">
+                              <span className="flex items-center gap-1">📖 LANGKAH DETAIL VERIFIKASI METATAG GSC</span>
+                              <span className="transition-transform group-open:rotate-180">▼</span>
+                            </summary>
+                            <div className="mt-3.5 space-y-2.5 text-on-surface-variant/90 leading-relaxed font-sans text-[11px] border-t border-outline-variant/10 pt-3">
+                              <p>Buktikan kepemilikan situs dengan memasang tag verifikasi HTML di header secara dinamis:</p>
+                              <ol className="list-decimal pl-4.5 space-y-2">
+                                <li>
+                                  <strong>Tambahkan Properti:</strong> Di Google Search Console, klik dropdown kiri atas, pilih <strong>+ Add Property</strong>.
+                                </li>
+                                <li>
+                                  <strong>Pilih URL Prefix:</strong> Masukkan URL lengkap domain Anda: <code>https://masandigital.com</code> di kolom sebelah kanan, lalu klik <strong>Continue</strong>.
+                                </li>
+                                <li>
+                                  <strong>Pilih HTML Tag:</strong> Di opsi metode verifikasi yang muncul, pilih menu <strong>HTML Tag</strong> (bukan HTML File).
+                                </li>
+                                <li>
+                                  <strong>Salin Meta Tag:</strong> Google akan memberikan baris kode seperti:<br />
+                                  <code>&lt;meta name="google-site-verification" content="wR1V2..." /&gt;</code>. Klik <strong>Copy (Salin)</strong>.
+                                </li>
+                                <li>
+                                  <strong>Tempel pada Input:</strong> Tempelkan baris tag meta yang disalin tersebut ke dalam kolom input di bawah. Sistem kami sangat cerdas &mdash; Anda dapat menempelkan seluruh baris HTML meta tersebut atau hanya kodenya saja, sistem kami otomatis membersihkan dan memproses kodenya secara dinamis!
+                                </li>
+                              </ol>
                             </div>
+                          </details>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5 font-sans">
+                              <Globe className="w-3.5 h-3.5 text-primary" />
+                              GSC Verification Code / Meta Content
+                            </label>
+                            <p className="text-[10px] text-on-surface-variant/80 font-sans leading-relaxed">
+                              Masukkan kode verifikasi HTML Tag yang diberikan oleh Google. Cukup masukkan nilai <code className="bg-surface-container-low px-1.5 py-0.5 rounded text-primary font-mono text-[9px]">content="..."</code> atau salin kode lengkapnya, kami akan memprosesnya secara otomatis!
+                            </p>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={googleSiteVerification}
+                                onChange={(e) => {
+                                  // Extract content value if they paste the whole HTML tag
+                                  const val = e.target.value;
+                                  if (val.includes('content=')) {
+                                    const match = val.match(/content="([^"]+)"/);
+                                    if (match && match[1]) {
+                                      setGoogleSiteVerification(match[1]);
+                                      return;
+                                    }
+                                  }
+                                  setGoogleSiteVerification(val);
+                                }}
+                                placeholder="e.g. wR1V2xxxxxxxxxxxxxx_xxxxxxxxxxxxxxx"
+                                className="w-full bg-background border border-outline-variant/30 focus:border-primary rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none transition-all font-mono"
+                              />
+                              <div className="absolute right-3 top-2.5 text-on-surface-variant/50 hover:text-primary cursor-pointer transition-colors p-1">
+                                <Globe className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <p className="text-[9px] text-on-surface-variant/60 font-sans italic leading-normal">
+                              *Tag meta ini akan langsung dipasang di header halaman utama secara dinamis dan siap disaring oleh bot validasi Google.
+                            </p>
                           </div>
-                          <p className="text-[9px] text-on-surface-variant/60 font-sans italic leading-normal">
-                            *Tag meta ini akan langsung dipasang di header halaman utama secara dinamis dan siap disaring oleh bot validasi Google.
-                          </p>
                         </div>
                       </div>
 
@@ -3800,6 +3894,7 @@ function SeoCenterPanel({
   const [bulkLogs, setBulkLogs] = useState<string[]>([]);
   const [seoScore, setSeoScore] = useState(70);
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
+  const [isIndexingAll, setIsIndexingAll] = useState(false);
 
   // AI Content Assistant & Keyword Density Auditor states (Ide 4)
   const [contentDraft, setContentDraft] = useState('');
@@ -3905,6 +4000,34 @@ function SeoCenterPanel({
     if (density < 1.0) return { label: 'Under-optimized (Tambahkan keyword di H2/Intro)', color: 'text-yellow-600 bg-yellow-500/10' };
     if (density <= 2.5) return { label: 'Optimasi Sempurna (Optimal)', color: 'text-green-600 bg-green-500/10 animate-pulse' };
     return { label: 'Keyword Stuffing Alert! (Terlalu banyak)', color: 'text-red-500 bg-red-500/10' };
+  };
+
+  const handleIndexAll = async () => {
+    if (isIndexingAll) return;
+    setIsIndexingAll(true);
+    
+    // Filter articles that need indexing (not yet in indexedIds)
+    const targets = publishedArticles.filter(art => !indexedIds.includes(art.id));
+    
+    // If all are already indexed, we can re-index all of them
+    const listToProcess = targets.length > 0 ? targets : publishedArticles;
+    
+    if (listToProcess.length === 0) {
+      alert('Belum ada artikel terbit yang dirilis ke publik!');
+      setIsIndexingAll(false);
+      return;
+    }
+
+    alert(`Memulai pengiriman massal untuk ${listToProcess.length} artikel secara berurutan...`);
+
+    for (const art of listToProcess) {
+      handleInstantIndex(art.id, art.title);
+      // Wait 600ms between calls to simulate a smooth api stream queue and avoid clogging
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
+
+    setIsIndexingAll(false);
+    alert('Selesai! Seluruh antrean artikel berhasil diajukan ke Google & Bing Indexing API.');
   };
 
   const publishedArticles = articles.filter(a => a.status === 'published');
@@ -4255,11 +4378,32 @@ function SeoCenterPanel({
 
       {/* Lower Panel: Articles Checklist & Instant Submission grid */}
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-        <div className="pb-3 border-b border-outline-variant/10">
-          <h3 className="font-extrabold text-base text-on-surface">
-            Status Indeksasi Publikasi Aktif
-          </h3>
-          <p className="text-[10px] text-on-surface-variant font-medium">Mewakili daftar seluruh artikel yang telah dirilis ke publik</p>
+        <div className="pb-3 border-b border-outline-variant/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-base text-on-surface">
+              Status Indeksasi Publikasi Aktif
+            </h3>
+            <p className="text-[10px] text-on-surface-variant font-medium">Mewakili daftar seluruh artikel yang telah dirilis ke publik</p>
+          </div>
+          
+          <button
+            type="button"
+            onClick={handleIndexAll}
+            disabled={isIndexingAll || publishedArticles.length === 0}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-black font-extrabold text-[11px] tracking-wide uppercase rounded-full shadow-md transition-all cursor-pointer select-none font-sans"
+          >
+            {isIndexingAll ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Indexing Queue...
+              </>
+            ) : (
+              <>
+                <Zap className="w-3.5 h-3.5 fill-black" />
+                Request Indexing Seluruhnya ({publishedArticles.length} Artikel)
+              </>
+            )}
+          </button>
         </div>
 
         {publishedArticles.length === 0 ? (
