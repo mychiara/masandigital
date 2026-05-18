@@ -175,7 +175,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
-                placeholder="admin@masandigital.com"
+                placeholder="your-email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-background border border-outline-variant/30 rounded-xl py-3 px-4 text-xs text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
