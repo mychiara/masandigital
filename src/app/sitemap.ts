@@ -17,8 +17,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     articleEntries = publishedArticles.map((article) => ({
       url: `${baseUrl}/article/${article.slug}`,
       lastModified: new Date(article.published_at || article.created_at),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
+      changeFrequency: 'daily' as const,
+      priority: 0.9,
     }));
   } catch (err) {
     console.error('Failed to generate dynamic sitemap entries:', err);

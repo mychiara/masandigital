@@ -22,6 +22,7 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
   const [siteTitle, setSiteTitle] = useState('masandigital.com');
   const [siteLogo, setSiteLogo] = useState('');
   const [categories, setCategories] = useState<string[]>(['All', 'AI', 'Dev', 'Strategy', 'Cloud', 'Hardware']);
+  const [trendingArticles, setTrendingArticles] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -61,6 +62,27 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
     }
   }, []);
 
+  useEffect(() => {
+    async function loadTrending() {
+      try {
+        const articles = await db.getArticles();
+        const published = articles
+          .filter(a => a.status === 'published')
+          .sort((a, b) => (b.views || 0) - (a.views || 0))
+          .slice(0, 5);
+        setTrendingArticles(published);
+      } catch (err) {
+        console.error('Failed to load trending articles in Navbar:', err);
+      }
+    }
+    loadTrending();
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('masandigital_views_incremented', loadTrending);
+      return () => window.removeEventListener('masandigital_views_incremented', loadTrending);
+    }
+  }, []);
+
   const handleLogout = () => {
     auth.logout();
     setUser(null);
@@ -76,13 +98,53 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
   ].filter(row => row.length > 0);
 
   return (
-    <header className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 glassmorphism rounded-2xl shadow-xl shadow-black/30 transition-all duration-300">
+    <header className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-50 glassmorphism rounded-2xl shadow-xl shadow-black/30 transition-all duration-300 overflow-hidden">
       {/* Hide Scrollbars for Categories horizontal scroll */}
       <style dangerouslySetInnerHTML={{__html: `
         .scrollbar-none::-webkit-scrollbar {
           display: none;
         }
       `}} />
+
+      {/* Dynamic Trending Ticker Banner */}
+      {trendingArticles.length > 0 && (
+        <div className="w-full bg-gradient-to-r from-primary/10 via-secondary/10 to-tertiary/10 border-b border-outline-variant/15 py-1.5 px-6 flex items-center gap-3 overflow-hidden text-[10px] md:text-xs font-bold text-on-surface rounded-t-2xl relative animate-fade-in">
+          <span className="flex items-center gap-1.5 bg-primary/20 text-primary border border-primary/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 font-extrabold animate-pulse">
+            🔥 Trending Now
+          </span>
+          <div className="flex-grow overflow-hidden relative h-5">
+            <div className="flex flex-col animate-ticker absolute left-0 w-full">
+              {trendingArticles.map((article, index) => (
+                <Link
+                  key={article.id}
+                  href={`/article/${article.slug}`}
+                  className="hover:text-primary transition-colors truncate block h-5 leading-5"
+                >
+                  <span className="text-secondary mr-1">#{index + 1}</span> {article.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes ticker {
+              0% { transform: translateY(0); }
+              15% { transform: translateY(0); }
+              20% { transform: translateY(-20px); }
+              35% { transform: translateY(-20px); }
+              40% { transform: translateY(-40px); }
+              55% { transform: translateY(-40px); }
+              60% { transform: translateY(-60px); }
+              75% { transform: translateY(-60px); }
+              80% { transform: translateY(-80px); }
+              95% { transform: translateY(-80px); }
+              100% { transform: translateY(0); }
+            }
+            .animate-ticker {
+              animation: ticker 15s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+            }
+          `}} />
+        </div>
+      )}
 
       <div className="px-6 lg:px-8 flex justify-between items-center min-h-[6rem] py-3.5 gap-4">
         

@@ -86,6 +86,47 @@ export default async function Page({ params }: PageProps) {
     );
   }
 
+  // Dynamic SEO Internal Link Auto-Linker Engine (Steps 1-5 & SEO Traffic Multiplier)
+  let linkedContent = article.content || '';
+  try {
+    const allArticles = await db.getArticles();
+    const otherArticles = allArticles.filter(a => a.id !== article.id && a.status === 'published');
+    
+    // Sort other articles by title length in descending order to match longer phrases first
+    const sortedOthers = [...otherArticles].sort((a, b) => b.title.length - a.title.length);
+    
+    // Take the top 15 candidates to avoid excessive linking (Google-friendly white-hat limits)
+    const candidates = sortedOthers.slice(0, 15);
+    
+    candidates.forEach((other) => {
+      const keyword = other.title.trim();
+      if (keyword.length < 5) return;
+      
+      // Escape regex special characters safely
+      const escapedKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      
+      // Matches the keyword on word boundaries, making sure it isn't inside HTML tags or markdown brackets
+      const regex = new RegExp(`\\b(${escapedKeyword})\\b(?![^<]*>)(?![^[]*\\])`, 'gi');
+      
+      let matchCount = 0;
+      linkedContent = linkedContent.replace(regex, (match) => {
+        if (matchCount < 1) {
+          matchCount++;
+          return `<a href="/article/${other.slug}" class="font-extrabold text-primary hover:underline">${match}</a>`;
+        }
+        return match;
+      });
+    });
+  } catch (err) {
+    console.error('SEO Dynamic Auto-Linker error:', err);
+  }
+
+  // Create article copy with dynamic internal links
+  const articleWithLinkedContent = {
+    ...article,
+    content: linkedContent
+  };
+
   // Helper to dynamically extract FAQ items from article content for Google Rich Snippets
   const faqItems: { question: string; answer: string }[] = [];
   try {
@@ -197,7 +238,7 @@ export default async function Page({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ArticleClient initialArticle={article} />
+      <ArticleClient initialArticle={articleWithLinkedContent} />
     </>
   );
 }
