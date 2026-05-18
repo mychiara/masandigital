@@ -944,6 +944,144 @@ function ArticleBlock({ article, settings, isFirst, relatedArticles }: ArticleBl
     }
   }
 
+  // Dynamically inject "Baca Juga" cards into HTML article body
+  let htmlContentWithRelated = finalContent;
+  if (isHtml && isFirst && relatedArticles.length > 0) {
+    const paragraphs = finalContent.split('</p>');
+    let newContent = '';
+    paragraphs.forEach((p, idx) => {
+      if (p.trim()) {
+        newContent += p + '</p>';
+      }
+      
+      // Inject inline "Baca Juga" card after every 3 paragraphs
+      if (idx > 0 && (idx + 1) % 3 === 0) {
+        const injectIndex = Math.floor((idx + 1) / 3) - 1;
+        if (injectIndex < relatedArticles.length) {
+          const related = relatedArticles[injectIndex];
+          const cardHtml = `
+            <div class="my-8 p-6 bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/20 rounded-2xl shadow-sm hover:border-primary/40 hover:bg-surface-container-high/50 transition-all duration-300">
+              <span class="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/15 mb-3">📌 Baca Juga</span>
+              <a href="/article/${related.slug}" class="block group">
+                <h4 class="text-sm md:text-base font-bold text-on-surface hover:text-primary transition-colors leading-snug line-clamp-2">${related.title}</h4>
+                <p class="text-[11px] text-on-surface-variant/70 mt-1.5 flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                  <span>⏱️ ${related.reading_time} min read</span>
+                  <span>•</span>
+                  <span>📂 ${related.category}</span>
+                </p>
+              </a>
+            </div>
+          `;
+          newContent += cardHtml;
+        }
+      }
+    });
+    htmlContentWithRelated = newContent;
+  }
+
+  // Render plain-text elements dynamically with scattered related articles
+  const renderPlainTextBody = () => {
+    const paragraphs = finalContent.split('\n\n');
+    const elements: React.ReactNode[] = [];
+
+    paragraphs.forEach((paragraph, idx) => {
+      const trimmed = paragraph.trim();
+      if (!trimmed) return;
+
+      let el: React.ReactNode = null;
+
+      if (trimmed.startsWith('### ')) {
+        const headingText = trimmed.replace(/^###\s+/, '');
+        const id = `heading-${article.id}-${idx}`;
+        el = (
+          <h3 key={`el-${idx}`} id={id} className="text-lg md:text-xl font-bold text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+            {headingText}
+          </h3>
+        );
+      } else if (trimmed.startsWith('## ')) {
+        const headingText = trimmed.replace(/^##\s+/, '');
+        const id = `heading-${article.id}-${idx}`;
+        el = (
+          <h2 key={`el-${idx}`} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+            {headingText}
+          </h2>
+        );
+      } else if (trimmed.startsWith('# ')) {
+        const headingText = trimmed.replace(/^#\s+/, '');
+        el = (
+          <h1 key={`el-${idx}`} className="text-2xl md:text-3xl font-black text-on-surface tracking-tight mt-10 mb-6">
+            {headingText}
+          </h1>
+        );
+      } else if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 150) {
+        const headingText = trimmed.slice(2, -2);
+        const id = `heading-${article.id}-${idx}`;
+        el = (
+          <h2 key={`el-${idx}`} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+            {headingText}
+          </h2>
+        );
+      } else {
+        const isShort = trimmed.length < 120;
+        const hasNoEndPunctuation = !/[.!?]$/.test(trimmed);
+        const hasNoNewlines = !trimmed.includes('\n');
+        if (isShort && hasNoEndPunctuation && hasNoNewlines && idx !== 0) {
+          const id = `heading-${article.id}-${idx}`;
+          el = (
+            <h2 key={`el-${idx}`} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+              {trimmed}
+            </h2>
+          );
+        } else if (idx === 0) {
+          el = (
+            <p 
+              key={`el-${idx}`} 
+              id={`sec-intro-${article.id}`}
+              className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none text-justify"
+            >
+              {paragraph}
+            </p>
+          );
+        } else {
+          el = (
+            <p key={`el-${idx}`} className="text-justify leading-relaxed">
+              {paragraph}
+            </p>
+          );
+        }
+      }
+
+      if (el) {
+        elements.push(el);
+      }
+
+      // Inject scattered related articles every 3 paragraphs
+      if (isFirst && relatedArticles.length > 0 && idx > 0 && (idx + 1) % 3 === 0) {
+        const injectIndex = Math.floor((idx + 1) / 3) - 1;
+        if (injectIndex < relatedArticles.length) {
+          const related = relatedArticles[injectIndex];
+          elements.push(
+            <div key={`related-${idx}`} className="my-8 p-6 bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/20 rounded-2xl shadow-sm hover:border-primary/40 hover:bg-surface-container-high/50 transition-all duration-300">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/15 mb-3">📌 Baca Juga</span>
+              <Link href={`/article/${related.slug}`} className="block group">
+                <h4 className="text-sm md:text-base font-bold text-on-surface group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                  {related.title}
+                </h4>
+                <p className="text-[11px] text-on-surface-variant/70 mt-1.5 flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                  <span>⏱️ {related.reading_time} min read</span>
+                  <span>•</span>
+                  <span>📂 {related.category}</span>
+                </p>
+              </Link>
+            </div>
+          );
+        }
+      }
+    });
+
+    return elements;
+  };
+
   return (
     <div className="space-y-8 border-b border-outline-variant/15 pb-16">
       
@@ -1061,123 +1199,11 @@ function ArticleBlock({ article, settings, isFirst, relatedArticles }: ArticleBl
       {isHtml ? (
         <div 
           className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none"
-          dangerouslySetInnerHTML={{ __html: finalContent }}
+          dangerouslySetInnerHTML={{ __html: htmlContentWithRelated }}
         />
       ) : (
         <div className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none">
-          {finalContent.split('\n\n').map((paragraph, idx) => {
-            const trimmed = paragraph.trim();
-            if (!trimmed) return null;
-
-            // Handle markdown headings (e.g. ## Heading or ### Heading)
-            if (trimmed.startsWith('### ')) {
-              const headingText = trimmed.replace(/^###\s+/, '');
-              const id = `heading-${article.id}-${idx}`;
-              return (
-                <h3 key={idx} id={id} className="text-lg md:text-xl font-bold text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
-                  {headingText}
-                </h3>
-              );
-            }
-            
-            if (trimmed.startsWith('## ')) {
-              const headingText = trimmed.replace(/^##\s+/, '');
-              const id = `heading-${article.id}-${idx}`;
-              return (
-                <h2 key={idx} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
-                  {headingText}
-                </h2>
-              );
-            }
-
-            if (trimmed.startsWith('# ')) {
-              const headingText = trimmed.replace(/^#\s+/, '');
-              return (
-                <h1 key={idx} className="text-2xl md:text-3xl font-black text-on-surface tracking-tight mt-10 mb-6">
-                  {headingText}
-                </h1>
-              );
-            }
-
-            // Handle bold lines that could act as headings: e.g. **Heading Text**
-            if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 150) {
-              const headingText = trimmed.slice(2, -2);
-              const id = `heading-${article.id}-${idx}`;
-              return (
-                <h2 key={idx} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
-                  {headingText}
-                </h2>
-              );
-            }
-
-            // Handle short lines without a period/question/exclamation at the end, acting as headings
-            const isShort = trimmed.length < 120;
-            const hasNoEndPunctuation = !/[.!?]$/.test(trimmed);
-            const hasNoNewlines = !trimmed.includes('\n');
-            if (isShort && hasNoEndPunctuation && hasNoNewlines && idx !== 0) {
-              const id = `heading-${article.id}-${idx}`;
-              return (
-                <h2 key={idx} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
-                  {trimmed}
-                </h2>
-              );
-            }
-
-            // Default paragraph (with custom first letter drop-cap for the very first paragraph)
-            if (idx === 0) {
-              return (
-                <p 
-                  key={idx} 
-                  id={`sec-intro-${article.id}`}
-                  className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none text-justify"
-                >
-                  {paragraph}
-                </p>
-              );
-            }
-
-            return (
-              <p key={idx} className="text-justify leading-relaxed">
-                {paragraph}
-              </p>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Baca Juga - Related Articles */}
-      {isFirst && relatedArticles.length > 0 && (
-        <div className="p-6 md:p-8 bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-3xl shadow-lg">
-          <h3 className="text-base md:text-lg font-black text-on-surface tracking-tight mb-5 flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-primary" />
-            Baca Juga
-            <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/15 ml-1">
-              {article.category}
-            </span>
-          </h3>
-          <div className="space-y-3">
-            {relatedArticles.map((related) => (
-              <Link
-                key={related.id}
-                href={`/article/${related.slug}`}
-                className="group flex items-start gap-3 p-3.5 rounded-2xl bg-surface-container-lowest/60 border border-outline-variant/15 hover:border-primary/30 hover:bg-surface-container-high/50 transition-all duration-300"
-              >
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="flex-grow min-w-0">
-                  <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-                    {related.title}
-                  </p>
-                  <p className="text-[11px] text-on-surface-variant mt-1 flex items-center gap-2">
-                    <span>{new Date(related.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                    <span>•</span>
-                    <span>{related.reading_time} min read</span>
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {renderPlainTextBody()}
         </div>
       )}
 
