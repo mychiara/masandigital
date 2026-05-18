@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import AdSlot from '../components/AdSlot';
 import { db, Article } from '../lib/db';
 import { Calendar, Clock, Eye, Sparkles, BookOpen, Send, CheckCircle2 } from 'lucide-react';
 
@@ -182,10 +183,7 @@ export default function HomePage() {
           {(!settings || (settings.ads_enabled && settings.ads_placements.above_header)) && (
             <div className="w-full min-h-[90px] mb-8 overflow-hidden rounded-2xl border border-outline-variant/15 flex items-center justify-center bg-surface-container-low/20">
               {settings?.ads_script_code ? (
-                <div 
-                  className="w-full h-full flex items-center justify-center"
-                  dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-                />
+                <AdSlot html={settings.ads_script_code} placement="above_header" />
               ) : (
                 <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
               )}
@@ -468,10 +466,7 @@ export default function HomePage() {
               {(!settings || (settings.ads_enabled && settings.ads_placements.sidebar)) && (
                 <div className="w-full min-h-[250px] overflow-hidden rounded-2xl border border-outline-variant/20 shadow-md p-4 bg-surface-container-low/30 flex items-center justify-center">
                   {settings?.ads_script_code ? (
-                    <div 
-                      className="w-full h-full flex items-center justify-center"
-                      dangerouslySetInnerHTML={{ __html: settings.ads_script_code }}
-                    />
+                    <AdSlot html={settings.ads_script_code} placement="sidebar" />
                   ) : (
                     <div className="p-6 bg-primary/5 text-primary text-xs font-bold text-center rounded-xl uppercase tracking-widest">[masandigital.com Premium AdSlot Banner]</div>
                   )}
