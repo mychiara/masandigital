@@ -154,6 +154,13 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
  
           {/* User Session Action Buttons */}
           <div className="hidden md:flex items-center gap-2.5">
+            <Link
+              href="/tools"
+              className="flex items-center gap-1.5 bg-secondary/10 text-secondary hover:bg-secondary/20 px-4.5 py-2.5 rounded-full font-bold text-xs transition-all border border-secondary/20 whitespace-nowrap mr-1 hover:scale-[1.03] active:scale-95 duration-200"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-secondary animate-pulse" />
+              Interactive Tools
+            </Link>
             {user ? (
               <>
                 <Link
@@ -228,6 +235,14 @@ export default function Navbar({ activeCategory, onCategoryChange, onSearchChang
           )}
  
           <div className="border-t border-outline-variant/10 pt-4 flex flex-col gap-2">
+            <Link
+              href="/tools"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center justify-center gap-2 bg-secondary text-white py-2.5 rounded-xl font-semibold text-sm shadow-md transition-all mb-2"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              Interactive Tools
+            </Link>
             {user ? (
               <>
                 <div className="flex items-center gap-2 mb-2 p-2 bg-surface-container-low rounded-xl border border-outline-variant/10">

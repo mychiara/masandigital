@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Navbar from '../../../components/Navbar';
 import Footer from '../../../components/Footer';
 import AdSlot from '../../../components/AdSlot';
+import AICompanion from '../../../components/AICompanion';
 import { db, Article } from '../../../lib/db';
 import { 
   Calendar, 
@@ -317,6 +318,15 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
                   )}
                 </div>
               )}
+
+              {/* AI Reader and Summary Companion (Idea 1) */}
+              <AICompanion
+                title={article.title}
+                content={article.content}
+                excerpt={article.excerpt}
+                category={article.category}
+                tocItems={tocItems}
+              />
 
               {/* Dynamic Auto Table of Contents (TOC) - Berada Sebelum Awal Article */}
               {tocItems.length > 0 && (
