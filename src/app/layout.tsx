@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import TrackingScripts from "../components/TrackingScripts";
+import SmartPrefetcher from "../components/SmartPrefetcher";
 import ThemeCustomizer from "../components/ThemeCustomizer";
 import { db } from "../lib/db";
 
@@ -75,6 +76,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-sans bg-background text-on-background">
         <TrackingScripts />
+        <SmartPrefetcher />
         {children}
         <ThemeCustomizer />
       </body>
