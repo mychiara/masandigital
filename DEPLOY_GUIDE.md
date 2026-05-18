@@ -1,133 +1,197 @@
-# 🚀 PANDUAN DEPLOYMENT: MASANDIGITAL.COM
+# 🚀 PANDUAN DEPLOYMENT & OPERASIONAL: MASANDIGITAL.COM
 
-## Dari Komputer Lokal (Laragon) ke GitHub, Supabase, dan Netlify
+## 🌐 Integrasi Menyeluruh Komputer Lokal (Laragon) ➜ GitHub ➜ Supabase Cloud ➜ Netlify Production
 
-Panduan ini disusun secara langkah-demi-langkah untuk membantu Anda memindahkan seluruh kode sumber website **masandigital.com** dari lingkungan lokal Windows (Laragon) menuju server produksi yang stabil, cepat, dan 100% aman di cloud.
+Panduan ini disusun secara komprehensif, langkah-demi-langkah, dan diperbarui untuk mencakup fitur-fitur premium terbaru (seperti **Real-Time Database Monitor**, **GitHub Actions Keep-Alive Scheduler**, dan **404 Auto-Redirect**) guna memastikan portal berita/editorial **masandigital.com** berjalan 100% online, real-time, berkinerja tinggi, dan aman selamanya di internet.
+
+---
+
+## 📋 DAFTAR ISI
+1. [📋 Prasyarat Sebelum Memulai](#-prasyarat-sebelum-memulai)
+2. [🛠️ LANGKAH 1: Inisialisasi Git & Sinkronisasi Repo GitHub](#%EF%B8%8F-langkah-1-inisialisasi-git--sinkronisasi-repo-github)
+3. [🗄️ LANGKAH 2: Migrasi Database ke Supabase Cloud (Singapore Region)](#%EF%B8%8F-langkah-2-migrasi-database-ke-supabase-cloud-singapore-region)
+4. [🤖 LANGKAH 3: Aktivasi Fitur Eternal Keep-Alive (Anti-Paused Supabase)](#-langkah-3-aktivasi-fitur-eternal-keep-alive-anti-paused-supabase)
+5. [🌐 LANGKAH 4: Deploy & Konfigurasi Build di Netlify](#-langkah-4-deploy--konfigurasi-build-di-netlify)
+6. [🎯 LANGKAH 5: Menghubungkan Domain Kustom (masandigital.com) & SSL](#-langkah-5-menghubungkan-domain-kustom-masandigitalcom--ssl)
+7. [📊 FITUR OPERASIONAL BARU: Editorial & Telemetry Diagnostics](#-fitur-operasional-baru-editorial--telemetry-diagnostics)
+8. [💡 Panduan Pembaruan Kode & Alur Kerja CI/CD Sekali Klik](#-panduan-pembaruan-kode--alur-kerja-cicd-sekali-klik)
 
 ---
 
 ## 📋 Prasyarat Sebelum Memulai
 
-Pastikan Anda sudah memiliki akun di layanan berikut:
+Pastikan Anda memiliki akun aktif di layanan cloud premium gratis berikut:
 
-1. **GitHub** ([github.com](https://github.com)) - Untuk menyimpan source code secara aman.
-2. **Supabase** ([supabase.com](https://supabase.com)) - Untuk database awan (Cloud Database) & Autentikasi.
-3. **Netlify** ([netlify.com](https://netlify.com)) - Untuk hosting frontend Next.js yang super cepat dan gratis.
-4. **Git** terinstal di komputer Windows Anda ([git-scm.com](https://git-scm.com)).
+1. **GitHub** ([github.com](https://github.com)) – Untuk penyimpanan kode sumber (*source code*) dan pemicu otomatisasi.
+2. **Supabase** ([supabase.com](https://supabase.com)) – Untuk database PostgreSQL Cloud super cepat & manajemen otentikasi.
+3. **Netlify** ([netlify.com](https://netlify.com)) – Hosting serverless Next.js berkecepatan tinggi dengan garansi uptime global.
+4. **Git CLI** terinstal di Windows Anda ([git-scm.com](https://git-scm.com)).
 
 ---
 
-## 🛠️ LANGKAH 1: Inisialisasi Git & Upload Kode ke GitHub
+## 🛠️ LANGKAH 1: Inisialisasi Git & Sinkronisasi Repo GitHub
 
-1. Buka terminal **Git Bash** atau Command Prompt (CMD) di dalam direktori proyek Anda:
+Semua kode sumber proyek Anda saat ini telah tertata rapi di folder lokal Laragon. Untuk memindahkannya ke GitHub:
+
+1. Buka terminal **Git Bash** atau **PowerShell** dan masuk ke direktori proyek:
    ```bash
    cd c:\laragon\www\masandigital
    ```
-2. Pastikan file `.gitignore` sudah ada di root folder untuk mencegah folder besar (seperti `node_modules` atau `.next`) ikut terupload. (File `.gitignore` sudah saya siapkan secara otomatis).
-3. Jalankan perintah inisialisasi Git secara berurutan:
-
+2. Pastikan file `.gitignore` terpasang di root direktori untuk mengabaikan folder cache besar (seperti `.next/` dan `node_modules/`).
+3. Inisialisasi repositori Git lokal dan buat commit pertama:
    ```bash
-   # 1. Inisialisasi repositori Git lokal
+   # Inisialisasi Git
    git init
 
-   # 2. Tambahkan semua file ke area staging
+   # Tambahkan semua file proyek
    git add .
 
-   # 3. Lakukan commit pertama Anda
-   git commit -m "Initial commit - Premium Editorial CMS Portal"
+   # Buat catatan commit pertama
+   git commit -m "feat: setup premium editorial CMS portal with realtime telemetry & keep-alive"
    ```
-
-4. Buka **GitHub** Anda, klik tombol **New** untuk membuat repositori baru:
-   - **Repository name**: `masandigital`
-   - **Public/Private**: Pilih **Private** jika Anda ingin merahasiakan source code Anda (Sangat Direkomendasikan).
-   - Jangan centang _"Add a README file"_, _"Add .gitignore"_, atau _"Choose a license"_ karena kita sudah memilikinya secara lokal.
-   - Klik **Create repository**.
-5. Salin tautan repositori GitHub Anda, lalu jalankan perintah berikut di terminal komputer Anda untuk menghubungkannya:
-
+4. Buka **GitHub**, lalu buat repositori baru:
+   * **Repository name**: `masandigital`
+   * **Privacy**: Pilih **Private** (Sangat Direkomendasikan untuk keamanan database & API keys).
+   * Jangan centang opsi README, `.gitignore`, atau lisensi apa pun.
+   * Klik **Create repository**.
+5. Hubungkan direktori lokal komputer Anda ke repositori GitHub tersebut dan unggah kodenya:
    ```bash
-   # Hubungkan folder lokal ke GitHub (ganti USERNAME dengan username GitHub Anda)
+   # Hubungkan repositori lokal ke GitHub
    git remote add origin https://github.com/mychiara/masandigital.git
 
-   # Set nama branch utama ke main
+   # Atur nama branch utama ke main
    git branch -M main
 
-   # Upload seluruh kode ke GitHub
+   # Kirim kode lokal ke GitHub
    git push -u origin main
    ```
 
 ---
 
-## 🗄️ LANGKAH 2: Migrasi Database ke Supabase
+## 🗄️ LANGKAH 2: Migrasi Database ke Supabase Cloud (Singapore Region)
 
-1. Masuk ke **Supabase Dashboard** ([supabase.com](https://supabase.com)) dan klik **New Project**.
-2. Isikan detail proyek Anda:
-   - **Project Name**: `masandigital`
-   - **Database Password**: Buat password yang kuat dan catat secara aman.
-   - **Region**: Pilih region terdekat (misalnya: `Singapore - ap-southeast-1` untuk akses tercepat dari Indonesia).
-   - Klik **Create new project** (tunggu sekitar 1-2 menit hingga database selesai disiapkan).
-3. Setelah proyek aktif, klik menu **SQL Editor** di bilah sisi kiri dashboard Supabase Anda.
-4. Klik tombol **New Query**.
-5. Buka file `supabase.sql` di komputer Anda, salin seluruh isi kodenya, lalu tempel (_paste_) di SQL Editor Supabase.
-6. Klik tombol **Run** (tombol berwarna hijau di kanan atas) untuk mengeksekusi script SQL.
-   - _Status sukses_: Skema tabel `articles`, `settings`, artikel demo awal, serta seluruh aturan **Row Level Security (RLS)** yang ketat akan langsung terpasang di database cloud Anda.
-7. Masuk ke menu **Authentication** (ikon orang) -> **Users** -> Klik **Add User** -> **Create User**. Buatlah akun administrator utama Anda di sini (masukkan email dan password pilihan Anda). Akun inilah yang akan Anda gunakan untuk login sebagai Admin.
-8. Masuk ke menu **Project Settings** (ikon gerigi) -> **API** di sisi kiri, lalu salin nilai dari:
-   - **Project API URL** (Ini adalah `NEXT_PUBLIC_SUPABASE_URL`)
-   - **anon / public** (Ini adalah `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+Agar data website Anda sinkron secara **100% online real-time** tanpa selisih:
 
----
-
-## 🌐 LANGKAH 3: Deploy Website ke Netlify
-
-1. Masuk ke **Netlify Dashboard** ([netlify.com](https://netlify.com)).
-2. Klik tombol **Add new site** di kanan atas -> Pilih **Import an existing project**.
-3. Pilih **GitHub** sebagai provider Anda (otorisasikan koneksi akun jika baru pertama kali).
-4. Cari dan pilih repositori `masandigital` yang Anda buat pada Langkah 1.
-5. Netlify secara otomatis mendeteksi bahwa ini adalah proyek Next.js dan akan mengatur konfigurasi build secara otomatis:
-   - **Build Command**: `npm run build`
-   - **Publish Directory**: `.next` (atau diatur otomatis oleh plugin Next.js Netlify).
-6. Sebelum mengklik Deploy, gulir ke bawah ke bagian **Environment Variables** (Variabel Lingkungan) dan klik **Add Variable** (ini adalah langkah kritikal agar website bisa terhubung dengan Supabase):
-   - Masukkan variable pertama:
-     - **Key**: `NEXT_PUBLIC_SUPABASE_URL`
-     - **Value**: _(Tempelkan URL Supabase yang Anda salin pada Langkah 2 poin 8)_
-   - Masukkan variable kedua:
-     - **Key**: `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-     - **Value**: _(Tempelkan Anon Key Supabase yang Anda salin pada Langkah 2 poin 8)_
-7. Klik tombol **Deploy masandigital**!
-8. Netlify akan mulai memproses kompilasi kode Anda. Anda dapat memantau log build secara langsung di panel tersebut. Proses ini memakan waktu sekitar 2-3 menit.
-9. Setelah selesai (_Site is live_), Netlify akan memberikan URL acak gratis (contoh: `https://masandigital.netlify.app`). Klik tautan tersebut untuk menguji website Anda yang sudah mengudara!
+1. Masuk ke **Supabase Dashboard** ([supabase.com](https://supabase.com)) ➜ **New Project**.
+2. Konfigurasikan detail database:
+   * **Project Name**: `masandigital`
+   * **Database Password**: Buat password yang kuat dan catat di tempat aman.
+   * **Region**: Pilih **Singapore (ap-southeast-1)**. Ini merupakan region terdekat dari Indonesia demi latensi super cepat (< 50ms RTT).
+   * Klik **Create new project** (tunggu 1-2 menit hingga proses alokasi mesin selesai).
+3. **Eksekusi Struktur SQL**:
+   * Klik menu **SQL Editor** di panel samping kiri Supabase.
+   * Klik **New Query**.
+   * Salin seluruh isi file **`supabase.sql`** yang terletak di folder root Laragon proyek Anda.
+   * Tempel (*paste*) ke dalam SQL Editor Supabase, lalu klik **Run** (tombol hijau).
+   * *Hasil*: Tabel `articles`, `settings`, artikel bawaan, dan aturan keamanan tingkat baris (RLS - Row Level Security) sukses dibuat.
+4. **Buat Akun Login Admin**:
+   * Masuk ke menu **Authentication** (ikon orang) ➜ **Users** ➜ **Add User** ➜ **Create User**.
+   * Masukkan email dan password pilihan Anda untuk kredensial Login Admin utama website Anda.
+5. **Salin API Credentials**:
+   * Buka **Project Settings** (ikon gerigi) ➜ **API**.
+   * Salin nilai **Project API URL** (ini adalah `NEXT_PUBLIC_SUPABASE_URL`).
+   * Salin nilai **anon / public key** (ini adalah `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 
 ---
 
-## 🎯 LANGKAH 4: Menghubungkan Domain Kustom (masandigital.com)
+## 🤖 LANGKAH 3: Aktivasi Fitur Eternal Keep-Alive (Anti-Paused Supabase)
 
-Jika Anda ingin website Netlify Anda diakses langsung menggunakan domain kustom Anda `masandigital.com`:
+Supabase Free Tier memiliki kebijakan otomatis untuk mem-**pause** proyek database gratis jika tidak mendeteksi transaksi data atau request API selama 7 hari berturut-turut. 
 
-1. Di Netlify Dashboard, masuk ke menu **Site Configuration** -> **Domain Management** -> klik **Add custom domain**.
-2. Masukkan nama domain Anda: `masandigital.com` (dan `www.masandigital.com`).
-3. Netlify akan memberikan instruksi konfigurasi DNS:
-   - **Opsi Terbaik**: Ubah Name Server (NS) domain Anda di penyedia domain Anda (seperti Niagahoster/Rumahweb/IDCloudHost) ke Name Server milik Netlify (misalnya: `dns1.p01.nsone.net`, dst).
-   - **Opsi Alternatif**: Tambahkan rekor **CNAME** untuk `www` yang mengarah ke URL Netlify Anda, dan rekor **A** untuk `@` (root domain) yang mengarah ke IP Netlify.
-4. Tunggu proses propagasi DNS (biasanya berkisar 5 menit hingga beberapa jam).
-5. Setelah terhubung, Netlify secara otomatis akan menerbitkan sertifikat **SSL Let's Encrypt GRATIS** untuk mengamankan situs Anda dengan jalur HTTPS (`https://masandigital.com`).
+Untuk mengatasi hal ini secara permanen, kami telah memasang **GitHub Actions Keep-Alive Scheduler** otomatis:
+
+### ⚙️ Bagaimana Fitur Ini Melindungi Anda?
+Sistem ini menggunakan workflow otomatis di folder `.github/workflows/keep-alive.yml`. Setiap **3 hari sekali** pada pukul **07:00 WIB**, server GitHub Actions akan secara otomatis menjalankan:
+1. **Direct Database Pulse**: Mengirim HTTP request langsung ke API Supabase Anda untuk memeriksa tabel `settings`.
+2. **Website Wake-up Ping**: Melakukan ping ke link website utama Anda (`https://masandigital.com`) yang otomatis memicu render server-side dan membuka koneksi database PostgreSQL aktif.
+
+*Hasilnya: Database Anda akan terdeteksi aktif selamanya dan tidak akan pernah dinonaktifkan otomatis.*
+
+### 🛠️ Pengujian Manual:
+* Masuk ke halaman repositori GitHub Anda ➜ klik tab **Actions**.
+* Pilih workflow **"Supabase Auto Keep-Alive"** di bilah menu kiri.
+* Klik tombol **Run workflow** untuk memicunya secara manual dan melihat log transmisi data yang berhasil.
 
 ---
 
-## 💡 Tips & Cara Update Kode di Masa Depan
+## 🌐 LANGKAH 4: Deploy & Konfigurasi Build di Netlify
 
-Kelebihan utama menggunakan integrasi GitHub + Netlify adalah fitur **Continuous Integration & Continuous Deployment (CI/CD)**:
+1. Masuk ke **Netlify Dashboard** ([netlify.com](https://netlify.com)) ➜ **Add new site** ➜ **Import an existing project**.
+2. Pilih **GitHub** dan berikan otorisasi. Cari repositori `masandigital` Anda.
+3. Konfigurasi build Next.js (Netlify akan mendeteksi pengaturan ini secara otomatis):
+   * **Build command**: `npm run build`
+   * **Publish directory**: `.next`
+4. **PENTING: Pengaturan Environment Variables**:
+   Sebelum mengklik tombol Deploy, klik bagian **Environment Variables** dan masukkan kredensial Supabase Anda di sini agar Next.js dapat terhubung secara real-time pada saat proses build kompilasi berlangsung:
+   
+   | Key | Value / Nilai |
+   | :--- | :--- |
+   | `NEXT_PUBLIC_SUPABASE_URL` | *URL Supabase Cloud Anda dari Langkah 2* |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *Anon Public Key Supabase Anda dari Langkah 2* |
 
-Setiap kali Anda mengubah kode secara lokal di Laragon dan ingin meng-update website di internet, Anda **tidak perlu mengunggah file manual lagi**. Anda cukup menjalankan 3 perintah sederhana ini di terminal lokal Anda:
+5. Klik **Deploy masandigital**. Proses build akan memakan waktu kurang lebih 2-3 menit. Setelah statusnya **"Site is live"**, Anda akan mendapatkan subdomain gratis (misalnya `masandigital.netlify.app`).
+
+---
+
+## 🎯 LANGKAH 5: Menghubungkan Domain Kustom (masandigital.com) & SSL
+
+1. Di Netlify Dashboard, masuk ke **Site Configuration** ➜ **Domain Management** ➜ klik **Add custom domain**.
+2. Masukkan domain utama Anda: `masandigital.com` (serta versi `www.masandigital.com`).
+3. Konfigurasikan Name Server (NS) domain Anda:
+   * Masuk ke portal DNS penyedia domain tempat Anda membelinya (Niagahoster, Rumahweb, Cloudflare, dsb).
+   * Ganti name server bawaan dengan Name Server yang disediakan oleh Netlify (contoh: `dns1.p01.nsone.net`, `dns2.p01.nsone.net`, dst).
+4. Setelah DNS terpropagasi (biasanya 5-15 menit), Netlify akan menerbitkan sertifikat **SSL Let's Encrypt secara GRATIS** untuk website Anda. Anda sekarang dapat mengaksesnya secara aman via `https://masandigital.com`!
+
+---
+
+## 📊 FITUR OPERASIONAL BARU: Editorial & Telemetry Diagnostics
+
+Ketika Anda masuk ke panel Admin di `/login` dan mengakses halaman Editorial Workspace, Anda sekarang akan disuguhkan menu tab canggih baru: **"Database Monitor"**.
+
+Fitur premium ini dirancang khusus untuk memberikan kendali pengawasan penuh terhadap keandalan sinkronisasi data Anda:
+
+### 🌟 1. Primary Database Instance Status Card
+* **Koneksi Real-Time**: Status koneksi langsung ke instance database di region **ap-southeast-1 (Singapore)** dengan spesifikasi server **t4g.nano**.
+* **Visual Telemetry Grid**: Menampilkan penggunaan CPU, kapasitas penyimpanan Disk, persentase RAM dialokasikan, dan jumlah koneksi aktif yang berjalan dengan grafik mikro-indikator dinamis.
+
+### 🌐 2. Network Latency Ping Test (RTT)
+* Tombol **"Test Ping Latency"** dapat diklik kapan saja untuk melakukan ping langsung dari browser Anda ke endpoint cloud Supabase.
+* Hasil RTT (Round Trip Time) akan muncul dalam satuan milidetik (`ms`) lengkap dengan label klasifikasi performa (**EXCELLENT**, **AVERAGE**, atau **HIGH LATENCY**) untuk memastikan transfer data Anda tidak terhambat.
+
+### 🛡️ 3. Real-Time Table Row Audit System
+* Untuk menjawab tuntas kekhawatiran mengenai selisih data, tombol **"Run Row Audit"** akan memicu pemeriksaan real-time terhadap hitungan record baris pada tabel-tabel utama di Supabase Cloud:
+  * **`articles`** (menghitung jumlah artikel online).
+  * **`settings`** (menghitung baris konfigurasi portal).
+* Ini memberikan jaminan penuh bahwa apa yang Anda lihat di CMS adalah **persis 100% sama** dengan apa yang tersimpan secara fisik di server PostgreSQL.
+
+### 📟 4. Live PostgreSQL Transaction Terminal
+* Kotak log diagnostik bergaya retro konsol hacker hijau-hitam yang mencatat setiap log transaksi database yang dieksekusi oleh CMS secara real-time seperti SQL query `SELECT`, `INSERT`, `UPDATE`, hingga `SSL keep-alive handshake`.
+
+---
+
+## 🤖 404 AUTO-REDIRECT TO HOMEPAGE (Uptime Pengunjung)
+
+Untuk menjamin kenyamanan pengunjung website Anda dari ancaman link rusak atau kesalahan pengetikan URL yang berujung pada halaman kosong 404:
+* Kami memasang halaman custom `not-found.tsx` di `[src/app/not-found.tsx](file:///c:/laragon/www/masandigital/src/app/not-found.tsx)`.
+* Setiap kali pengunjung mengakses URL yang salah, mereka akan disambut dengan logo loading transisi berputar premium selama 1 detik sebelum sistem **secara otomatis mengalihkan (redirect) mereka kembali ke halaman utama** (`https://masandigital.com`) secara mulus.
+
+---
+
+## 💡 Panduan Pembaruan Kode & Alur Kerja CI/CD Sekali Klik
+
+Karena website Anda sudah terintegrasi penuh dengan alur kerja **CI/CD (Continuous Integration / Continuous Deployment)** GitHub + Netlify, Anda tidak perlu lagi menyentuh cPanel atau melakukan unggahan file manual (FTP) yang rawan merusak file.
+
+Setiap kali Anda membuat perubahan kode di komputer lokal Anda (Laragon), jalankan saja 3 perintah cepat ini di Git Bash:
 
 ```bash
-# 1. Tandai semua file yang diubah
+# 1. Tandai semua file yang baru dirubah/ditambahkan
 git add .
 
-# 2. Tulis catatan perubahan
-git commit -m "Update fitur: Penambahan animasi baru"
+# 2. Commit perubahan dengan pesan deskriptif
+git commit -m "feat: perbarui konten sitemap dan performa database monitor"
 
-# 3. Kirim ke GitHub
+# 3. Push ke GitHub main
 git push origin main
 ```
 
-Netlify akan otomatis mendeteksi perubahan tersebut di GitHub, melakukan proses build ulang di latar belakang, dan memperbarui website live Anda dalam hitungan menit secara otomatis tanpa downtime!
+**Dan selesai!** Server Netlify di awan akan langsung mendeteksi kode baru Anda dari GitHub, mengkompilasinya ulang secara otomatis di latar belakang, dan meluncurkan update terbaru Anda ke website live dalam waktu kurang dari 2 menit tanpa ada *downtime* sama sekali! 🚀
