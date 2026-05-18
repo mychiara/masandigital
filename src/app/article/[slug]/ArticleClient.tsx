@@ -99,12 +99,32 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
       idx++;
     }
   } else {
-    visibleTocItems.push(
-      { id: `sec-intro-${visibleArticle.id}`, label: 'Introduction' },
-      { id: `sec-arch-${visibleArticle.id}`, label: 'Architecting for Hyper-Speed' },
-      { id: `sec-trust-${visibleArticle.id}`, label: 'Digital Trust Protocols' },
-      { id: `sec-future-${visibleArticle.id}`, label: 'Future Editorial Outlook' }
-    );
+    visibleArticle.content.split('\n\n').forEach((paragraph, idx) => {
+      const trimmed = paragraph.trim();
+      if (!trimmed) return;
+
+      let headingLabel = '';
+      if (trimmed.startsWith('## ')) {
+        headingLabel = trimmed.replace(/^##\s+/, '');
+      } else if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 150) {
+        headingLabel = trimmed.slice(2, -2);
+      } else {
+        const isShort = trimmed.length < 120;
+        const hasNoEndPunctuation = !/[.!?]$/.test(trimmed);
+        const hasNoNewlines = !trimmed.includes('\n');
+        if (isShort && hasNoEndPunctuation && hasNoNewlines && idx !== 0) {
+          headingLabel = trimmed;
+        }
+      }
+
+      if (headingLabel) {
+        visibleTocItems.push({ id: `heading-${visibleArticle.id}-${idx}`, label: headingLabel });
+      }
+    });
+
+    if (visibleTocItems.length === 0) {
+      visibleTocItems.push({ id: `heading-${visibleArticle.id}-0`, label: 'Introduction' });
+    }
   }
 
   // Theme Personalization Engine State
@@ -895,13 +915,33 @@ function ArticleBlock({ article, settings, isFirst, relatedArticles }: ArticleBl
       return `<h2${attrs} id="heading-${article.id}-${count++}">`;
     });
   } else {
-    // Plain text fallback static items
-    tocItems.push(
-      { id: `sec-intro-${article.id}`, label: 'Introduction' },
-      { id: `sec-arch-${article.id}`, label: 'Architecting for Hyper-Speed' },
-      { id: `sec-trust-${article.id}`, label: 'Digital Trust Protocols' },
-      { id: `sec-future-${article.id}`, label: 'Future Editorial Outlook' }
-    );
+    // Dynamically parse headings from plain text paragraphs
+    article.content.split('\n\n').forEach((paragraph, idx) => {
+      const trimmed = paragraph.trim();
+      if (!trimmed) return;
+
+      let headingLabel = '';
+      if (trimmed.startsWith('## ')) {
+        headingLabel = trimmed.replace(/^##\s+/, '');
+      } else if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 150) {
+        headingLabel = trimmed.slice(2, -2);
+      } else {
+        const isShort = trimmed.length < 120;
+        const hasNoEndPunctuation = !/[.!?]$/.test(trimmed);
+        const hasNoNewlines = !trimmed.includes('\n');
+        if (isShort && hasNoEndPunctuation && hasNoNewlines && idx !== 0) {
+          headingLabel = trimmed;
+        }
+      }
+
+      if (headingLabel) {
+        tocItems.push({ id: `heading-${article.id}-${idx}`, label: headingLabel });
+      }
+    });
+
+    if (tocItems.length === 0) {
+      tocItems.push({ id: `heading-${article.id}-0`, label: 'Introduction' });
+    }
   }
 
   return (
@@ -1026,52 +1066,81 @@ function ArticleBlock({ article, settings, isFirst, relatedArticles }: ArticleBl
       ) : (
         <div className="content font-normal text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 prose max-w-none">
           {finalContent.split('\n\n').map((paragraph, idx) => {
+            const trimmed = paragraph.trim();
+            if (!trimmed) return null;
+
+            // Handle markdown headings (e.g. ## Heading or ### Heading)
+            if (trimmed.startsWith('### ')) {
+              const headingText = trimmed.replace(/^###\s+/, '');
+              const id = `heading-${article.id}-${idx}`;
+              return (
+                <h3 key={idx} id={id} className="text-lg md:text-xl font-bold text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+                  {headingText}
+                </h3>
+              );
+            }
+            
+            if (trimmed.startsWith('## ')) {
+              const headingText = trimmed.replace(/^##\s+/, '');
+              const id = `heading-${article.id}-${idx}`;
+              return (
+                <h2 key={idx} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+                  {headingText}
+                </h2>
+              );
+            }
+
+            if (trimmed.startsWith('# ')) {
+              const headingText = trimmed.replace(/^#\s+/, '');
+              return (
+                <h1 key={idx} className="text-2xl md:text-3xl font-black text-on-surface tracking-tight mt-10 mb-6">
+                  {headingText}
+                </h1>
+              );
+            }
+
+            // Handle bold lines that could act as headings: e.g. **Heading Text**
+            if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length < 150) {
+              const headingText = trimmed.slice(2, -2);
+              const id = `heading-${article.id}-${idx}`;
+              return (
+                <h2 key={idx} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+                  {headingText}
+                </h2>
+              );
+            }
+
+            // Handle short lines without a period/question/exclamation at the end, acting as headings
+            const isShort = trimmed.length < 120;
+            const hasNoEndPunctuation = !/[.!?]$/.test(trimmed);
+            const hasNoNewlines = !trimmed.includes('\n');
+            if (isShort && hasNoEndPunctuation && hasNoNewlines && idx !== 0) {
+              const id = `heading-${article.id}-${idx}`;
+              return (
+                <h2 key={idx} id={id} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8 mb-4 border-b border-outline-variant/15 pb-2">
+                  {trimmed}
+                </h2>
+              );
+            }
+
+            // Default paragraph (with custom first letter drop-cap for the very first paragraph)
             if (idx === 0) {
               return (
                 <p 
                   key={idx} 
                   id={`sec-intro-${article.id}`}
-                  className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none"
+                  className="first-letter:text-6xl first-letter:font-extrabold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none text-justify"
                 >
                   {paragraph}
                 </p>
               );
             }
-            
-            if (idx === 1) {
-              return (
-                <div key={idx} className="space-y-6">
-                  <h2 id={`sec-arch-${article.id}`} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                    Architecting for Hyper-Speed
-                  </h2>
-                  <p>{paragraph}</p>
-                </div>
-              );
-            }
 
-            if (idx === 2) {
-              return (
-                <div key={idx} className="space-y-6">
-                  <h2 id={`sec-trust-${article.id}`} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                    Digital Trust Protocols
-                  </h2>
-                  <p>{paragraph}</p>
-                </div>
-              );
-            }
-
-            if (idx === 3) {
-              return (
-                <div key={idx} className="space-y-6">
-                  <h2 id={`sec-future-${article.id}`} className="text-xl md:text-2xl font-black text-on-surface tracking-tight mt-8">
-                    Future Editorial Outlook
-                  </h2>
-                  <p>{paragraph}</p>
-                </div>
-              );
-            }
-
-            return <p key={idx}>{paragraph}</p>;
+            return (
+              <p key={idx} className="text-justify leading-relaxed">
+                {paragraph}
+              </p>
+            );
           })}
         </div>
       )}

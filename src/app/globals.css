@@ -261,3 +261,85 @@ body {
   background: var(--color-primary);
 }
 
+/* ==========================================================================
+   PREMIUM ARTICLE CONTENT TYPOGRAPHY ENGINE (STEPS 1-5 & UX OPTIMIZATION)
+   ========================================================================== */
+.content {
+  text-align: justify;
+  text-justify: inter-word;
+  word-break: break-word;
+}
+
+.content p {
+  line-height: 1.85;
+  margin-bottom: 1.75rem;
+  color: var(--color-on-surface-variant);
+  font-size: 1.0625rem;
+  font-weight: 450;
+  letter-spacing: -0.011em;
+}
+
+html[data-mode="dark"] .content p {
+  color: #cbd5e1; /* Ultra-comfortable slate cream for prolonged nighttime reading */
+}
+
+.content h1, .content h2, .content h3, .content h4 {
+  color: var(--color-on-surface);
+  font-family: var(--font-inter), sans-serif;
+  letter-spacing: -0.02em;
+  font-weight: 850;
+}
+
+.content h2 {
+  font-size: 1.625rem;
+  margin-top: 3rem;
+  margin-bottom: 1.25rem;
+  border-b: 1px solid rgba(29, 78, 216, 0.15);
+  padding-bottom: 0.5rem;
+}
+
+html[data-mode="dark"] .content h2 {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content h3 {
+  font-size: 1.375rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.content ul, .content ol {
+  margin-left: 2rem;
+  margin-bottom: 1.75rem;
+  space-y: 0.5rem;
+}
+
+.content ul {
+  list-style-type: disc;
+}
+
+.content ol {
+  list-style-type: decimal;
+}
+
+.content li {
+  line-height: 1.75;
+  margin-bottom: 0.5rem;
+  color: var(--color-on-surface-variant);
+  font-size: 1.0625rem;
+}
+
+html[data-mode="dark"] .content li {
+  color: #cbd5e1;
+}
+
+.content strong {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+html[data-mode="dark"] .content strong {
+  color: var(--color-secondary-container);
+}
+
+
