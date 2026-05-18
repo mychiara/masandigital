@@ -141,13 +141,15 @@ ON CONFLICT (id) DO NOTHING;
 -- Drop storage policies if they exist first to avoid conflict on re-runs
 DROP POLICY IF EXISTS "Allow public read access on storage objects" ON storage.objects;
 DROP POLICY IF EXISTS "Allow authenticated users full access to avatars and uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public full access to avatars and uploads" ON storage.objects;
 
 -- Allow public read access to storage objects
 CREATE POLICY "Allow public read access on storage objects" ON storage.objects
     FOR SELECT USING (true);
 
--- Allow authenticated users to perform all actions inside the avatars and uploads buckets
-CREATE POLICY "Allow authenticated users full access to avatars and uploads" ON storage.objects
-    FOR ALL TO authenticated USING (bucket_id IN ('avatars', 'uploads')) WITH CHECK (bucket_id IN ('avatars', 'uploads'));
+-- Allow public (anyone) to perform all actions inside the avatars and uploads buckets for seamless localhost editing
+CREATE POLICY "Allow public full access to avatars and uploads" ON storage.objects
+    FOR ALL TO public USING (bucket_id IN ('avatars', 'uploads')) WITH CHECK (bucket_id IN ('avatars', 'uploads'));
+
 
 
