@@ -86,15 +86,34 @@ export default async function Page({ params }: PageProps) {
     );
   }
 
+  // Helper to dynamically extract FAQ items from article content for Google Rich Snippets
+  const faqItems: { question: string; answer: string }[] = [];
+  try {
+    const content = article.content || '';
+    // Match "Q1: What is..." or "Pertanyaan 1: What is..."
+    const qMatches = Array.from(content.matchAll(/(?:Q\d*|Pertanyaan\d*)\s*:\s*([^<]+)/gi));
+    // Match "A: It is..." or "Jawaban: It is..."
+    const aMatches = Array.from(content.matchAll(/(?:A|Jawaban)\s*:\s*([^<]+)/gi));
+    
+    const count = Math.min(qMatches.length, aMatches.length);
+    for (let i = 0; i < count; i++) {
+      const question = qMatches[i][1].replace(/^<strong>|<\/strong>$/g, '').trim();
+      const answer = aMatches[i][1].replace(/^<strong>|<\/strong>$/g, '').trim();
+      if (question && answer) {
+        faqItems.push({ question, answer });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to parse dynamic FAQs for Schema markup:', err);
+  }
+
   // Generate dynamic JSON-LD structured data for advanced Google Rich Snippet indexing
-  const jsonLd = [
+  const jsonLd: any[] = [
     {
       '@context': 'https://schema.org',
       '@type': 'NewsArticle',
       'headline': article.title,
-      'image': [
-        article.cover_image
-      ],
+      'image': [article.cover_image],
       'datePublished': new Date(article.published_at || article.created_at).toISOString(),
       'dateModified': new Date(article.published_at || article.created_at).toISOString(),
       'author': [{
@@ -108,7 +127,12 @@ export default async function Page({ params }: PageProps) {
         'logo': {
           '@type': 'ImageObject',
           'url': 'https://masandigital.com/logo.png'
-        }
+        },
+        'sameAs': [
+          'https://www.facebook.com/masandigital',
+          'https://www.twitter.com/masandigital',
+          'https://www.linkedin.com/company/masandigital'
+        ]
       },
       'description': article.excerpt || article.title
     },
@@ -135,8 +159,36 @@ export default async function Page({ params }: PageProps) {
           'item': `https://masandigital.com/article/${article.slug}`
         }
       ]
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': 'https://masandigital.com/#organization',
+      'name': 'masandigital.com',
+      'url': 'https://masandigital.com',
+      'logo': 'https://masandigital.com/logo.png',
+      'sameAs': [
+        'https://www.facebook.com/masandigital',
+        'https://www.twitter.com/masandigital',
+        'https://www.linkedin.com/company/masandigital'
+      ]
     }
   ];
+
+  if (faqItems.length > 0) {
+    jsonLd.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      'mainEntity': faqItems.map(item => ({
+        '@type': 'Question',
+        'name': item.question,
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': item.answer
+        }
+      }))
+    });
+  }
 
   // Render the pre-fetched static article into our client-side interactive component
   return (
