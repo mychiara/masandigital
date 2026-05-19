@@ -96,15 +96,20 @@ export const supabase = isSupabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
+// Lightweight columns for list views (excludes heavy 'content' field)
+const LIGHT_COLUMNS = 'id, title, slug, excerpt, category, cover_image, author_name, author_avatar, reading_time, status, views, created_at, published_at, keywords, comments_enabled';
+
 // ==========================================
 // Advanced Sub-Millisecond In-Memory Caching System
 // ==========================================
 const cache = {
   articles: null as { data: Article[]; timestamp: number } | null,
+  articlesLight: null as { data: Article[]; timestamp: number } | null,
   articleBySlug: {} as Record<string, { data: Article | null; timestamp: number }>,
   settings: null as { data: SiteSettings; timestamp: number } | null,
   clear() {
     this.articles = null;
+    this.articlesLight = null;
     this.articleBySlug = {};
     this.settings = null;
   }
@@ -113,10 +118,13 @@ const cache = {
 // Active request coalescing registry (prevents parallel identical queries to Supabase)
 const pending = {
   articles: null as Promise<Article[] | null> | null,
+  articlesLight: null as Promise<Article[] | null> | null,
   settings: null as Promise<SiteSettings | null> | null,
 };
 
-const CACHE_TTL = 30000; // 30 seconds caching window for ultimate performance
+const CACHE_TTL = 30000; // 30s for full articles
+const CACHE_TTL_LIGHT = 60000; // 60s for lightweight list (no content = safer to cache longer)
+const CACHE_TTL_SETTINGS = 120000; // 120s for settings (rarely changes)
 
 export const db = {
   isSupabase: isSupabaseConfigured,
@@ -165,6 +173,67 @@ export const db = {
     }
     
     // Filter the cached articles in memory (sub-millisecond instant!)
+    let filtered = [...allArticles];
+    if (category && category !== 'All') {
+      filtered = filtered.filter(a => a.category.toLowerCase() === category.toLowerCase());
+    }
+    if (search) {
+      filtered = filtered.filter(a => a.title.toLowerCase().includes(search.toLowerCase()));
+    }
+    return filtered;
+  },
+
+  // Lightweight article list (WITHOUT content) - for homepage, sidebar, sitemap, related
+  // Uses longer TTL + stale-while-revalidate for blazing speed
+  async getArticlesLight(category?: string, search?: string): Promise<Article[]> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    let allArticles: Article[] = [];
+    const nowTime = Date.now();
+
+    if (cache.articlesLight && (nowTime - cache.articlesLight.timestamp < CACHE_TTL_LIGHT)) {
+      // Fresh cache hit
+      allArticles = cache.articlesLight.data;
+    } else if (cache.articlesLight) {
+      // Stale-while-revalidate: return stale, refresh in background
+      allArticles = cache.articlesLight.data;
+      if (!pending.articlesLight) {
+        pending.articlesLight = (async () => {
+          try {
+            const { data, error } = await supabase
+              .from('articles').select(LIGHT_COLUMNS)
+              .order('created_at', { ascending: false });
+            if (error) throw error;
+            cache.articlesLight = { data: (data as Article[]) || [], timestamp: Date.now() };
+            return cache.articlesLight.data;
+          } catch { return null; } finally { pending.articlesLight = null; }
+        })();
+      }
+    } else {
+      // Cold start
+      if (!pending.articlesLight) {
+        pending.articlesLight = (async () => {
+          try {
+            const { data, error } = await supabase
+              .from('articles').select(LIGHT_COLUMNS)
+              .order('created_at', { ascending: false });
+            if (error) throw error;
+            return (data as Article[]) || [];
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            throw new Error(`Failed to fetch articles light: ${msg}`);
+          }
+        })();
+      }
+      try {
+        const res = await pending.articlesLight;
+        if (res !== null) allArticles = res;
+      } finally { pending.articlesLight = null; }
+      cache.articlesLight = { data: allArticles, timestamp: nowTime };
+    }
+
     let filtered = [...allArticles];
     if (category && category !== 'All') {
       filtered = filtered.filter(a => a.category.toLowerCase() === category.toLowerCase());
@@ -337,24 +406,38 @@ export const db = {
     }
   },
 
-  // Increment views (quietly updates cache)
+  // Increment views - optimized: try RPC (1 query), fallback to 2 queries
+  // Fire-and-forget: caller should NOT await this for page rendering
   async incrementViews(id: string): Promise<number> {
     if (!isSupabaseConfigured || !supabase) return 0;
 
     try {
-      const { data: current } = await supabase.from('articles').select('views').eq('id', id).single();
-      const nextViews = (current?.views || 0) + 1;
-      await supabase.from('articles').update({ views: nextViews }).eq('id', id);
-      
-      // Quietly update our cached views count
-      if (cache.articles) {
-        const item = cache.articles.data.find(a => a.id === id);
-        if (item) item.views = nextViews;
+      // Try Supabase RPC function first (single atomic query)
+      const { data: rpcResult, error: rpcError } = await supabase
+        .rpc('increment_views', { row_id: id });
+
+      let nextViews: number;
+      if (!rpcError && rpcResult !== null) {
+        nextViews = typeof rpcResult === 'number' ? rpcResult : (rpcResult as any)?.[0]?.views || 0;
+      } else {
+        // Fallback: 2-query approach
+        const { data: current } = await supabase.from('articles').select('views').eq('id', id).single();
+        nextViews = (current?.views || 0) + 1;
+        await supabase.from('articles').update({ views: nextViews }).eq('id', id);
       }
-      
+
+      // Update both caches silently
+      const updateCache = (items: Article[] | undefined) => {
+        if (!items) return;
+        const item = items.find(a => a.id === id);
+        if (item) item.views = nextViews;
+      };
+      updateCache(cache.articles?.data);
+      updateCache(cache.articlesLight?.data);
+
       return nextViews;
     } catch (err) {
-      console.error(`Supabase incrementViews (${id}) failed silently:`, err);
+      console.error(`incrementViews (${id}) failed silently:`, err);
       return 0;
     }
   },
@@ -366,7 +449,7 @@ export const db = {
     }
 
     const nowTime = Date.now();
-    if (cache.settings && (nowTime - cache.settings.timestamp < CACHE_TTL)) {
+    if (cache.settings && (nowTime - cache.settings.timestamp < CACHE_TTL_SETTINGS)) {
       return cache.settings.data;
     }
 
@@ -500,3 +583,24 @@ export const db = {
     }
   }
 };
+
+// ==========================================
+// Cache Warming - Pre-fetch on module load to eliminate cold starts
+// ==========================================
+export async function warmCache() {
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    await Promise.all([
+      db.getArticlesLight(),
+      db.getSettings(),
+    ]);
+    console.log('[DB Cache] Warm-up complete: articlesLight + settings pre-cached');
+  } catch (err) {
+    console.error('[DB Cache] Warm-up failed (non-fatal):', err);
+  }
+}
+
+// Auto-warm cache on server startup (non-blocking)
+if (typeof window === 'undefined' && isSupabaseConfigured) {
+  warmCache();
+}

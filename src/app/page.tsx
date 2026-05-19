@@ -43,7 +43,7 @@ export default function HomePage() {
   useEffect(() => {
     async function loadArticles() {
       setLoading(true);
-      const data = await db.getArticles(activeCategory, searchQuery);
+      const data = await db.getArticlesLight(activeCategory, searchQuery);
       setArticles(data.filter(a => a.status === 'published'));
       setLoading(false);
       setCurrentPage(1); // Reset page to 1 on filter or search changes!
@@ -65,7 +65,7 @@ export default function HomePage() {
     // Only fetch separately when a filter is active; otherwise reuse main articles list
     if (activeCategory !== 'All' || searchQuery) {
       async function loadAll() {
-        const data = await db.getArticles();
+        const data = await db.getArticlesLight();
         setAllArticles(data.filter(a => a.status === 'published'));
       }
       loadAll();

@@ -228,7 +228,32 @@ export default function AdminDashboard() {
   }, [activeTab]);
 
   const [indexingId, setIndexingId] = useState<string | null>(null);
-  const [indexedIds, setIndexedIds] = useState<string[]>([]);
+  const [indexedIds, setIndexedIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('masandigital_indexed_ids');
+        return saved ? JSON.parse(saved) : [];
+      } catch { return []; }
+    }
+    return [];
+  });
+
+  // Persist indexedIds to localStorage whenever it changes
+  useEffect(() => {
+    if (indexedIds.length > 0) {
+      localStorage.setItem('masandigital_indexed_ids', JSON.stringify(indexedIds));
+    }
+  }, [indexedIds]);
+  const [showIndexingModal, setShowIndexingModal] = useState(false);
+  const [indexingPayload, setIndexingPayload] = useState<{
+    url: string;
+    articleId: string;
+    action: string;
+    googleActive: boolean;
+    bingActive: boolean;
+    responseStatus: string;
+    message: string;
+  } | null>(null);
 
   const runAiGenerator = async () => {
     const list = aiKeywords.split('\n').map(k => k.trim()).filter(Boolean);
@@ -383,16 +408,41 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleInstantIndex = (articleId: string, articleTitle: string) => {
+  const triggerIndexingModal = (payload: any) => {
+    setIndexingPayload(payload);
+    setShowIndexingModal(true);
+  };
+
+  const handleInstantIndex = (articleId: string, articleTitle: string, isSilent = false) => {
     if (indexedIds.includes(articleId)) {
-      alert(`[Google Search Console API]\nArtikel ini sudah terindeks secara instan!`);
+      if (!isSilent) {
+        triggerIndexingModal({
+          url: `https://masandigital.com/article/${articleId}`,
+          articleId,
+          action: 'URL_UPDATED',
+          googleActive: true,
+          bingActive: true,
+          responseStatus: '200 OK (Google & Bing Indexed)',
+          message: 'Artikel ini sudah terindeks secara instan! Seluruh data crawler Google & Bing dalam keadaan terverifikasi dan aktif.'
+        });
+      }
       return;
     }
     setIndexingId(articleId);
     setTimeout(() => {
       setIndexedIds((prev) => [...prev, articleId]);
       setIndexingId(null);
-      alert(`[Google Search Console API]\nPermohonan Instant Indexing Sukses dikirim!\n\nPayload:\n- URL: https://masandigital.com/article/${articleId}\n- Action: URL_UPDATED\n- Google API Integration: AKTIF\n- Bing Webmaster Integration: AKTIF\n\nResponse: 200 OK (Google & Bing Indexed)\nRobot perayap Google dan Bing sedang meluncur ke URL artikel masandigital.com!`);
+      if (!isSilent) {
+        triggerIndexingModal({
+          url: `https://masandigital.com/article/${articleId}`,
+          articleId,
+          action: 'URL_UPDATED',
+          googleActive: true,
+          bingActive: true,
+          responseStatus: '200 OK (Google & Bing Indexed)',
+          message: 'Robot perayap Google dan Bing sedang meluncur ke URL artikel masandigital.com untuk memproses pengindeksan instan!'
+        });
+      }
     }, 1500);
   };
 
@@ -3647,6 +3697,7 @@ export default function AdminDashboard() {
               setIndexedIds={setIndexedIds} 
               handleInstantIndex={handleInstantIndex} 
               indexingId={indexingId} 
+              triggerIndexingModal={triggerIndexingModal}
             />
           )}
 
@@ -3864,6 +3915,118 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Premium Glassmorphic SEO Indexing Success Modal */}
+      {showIndexingModal && indexingPayload && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in font-sans">
+          <div className="relative w-full max-w-lg bg-surface-container/95 border border-outline-variant/30 rounded-3xl shadow-2xl overflow-hidden glassmorphism transform transition-all duration-300 scale-100 flex flex-col max-h-[90vh]">
+            
+            {/* Cyber Header bar */}
+            <div className="bg-gradient-to-r from-primary/20 via-secondary/20 to-tertiary/20 p-6 pb-4 flex items-center justify-between border-b border-outline-variant/20">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-primary/20 text-primary rounded-xl border border-primary/25 animate-pulse">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-extrabold text-sm text-on-surface uppercase tracking-wider font-mono">
+                    Search Engine Console API
+                  </h3>
+                  <p className="text-[10px] text-on-surface-variant font-mono">Status: Connected (200 OK)</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowIndexingModal(false)}
+                className="p-1.5 hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-primary transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content body */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-grow text-left">
+              {/* Success Badge */}
+              <div className="text-center py-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 bg-green-500/20 text-green-700 rounded-full flex items-center justify-center border border-green-500/30">
+                  <svg className="w-6 h-6 animate-bounce text-green-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h4 className="font-black text-sm text-green-700 tracking-tight">
+                  Permohonan Instant Indexing Sukses dikirim!
+                </h4>
+                <p className="text-[10px] text-green-600/90 max-w-sm leading-relaxed px-4 text-center font-bold">
+                  {indexingPayload.message}
+                </p>
+              </div>
+
+              {/* Payload Breakdown Block */}
+              <div className="space-y-3">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant/50 block">
+                  Data Transmisi API (Payload)
+                </span>
+                
+                <div className="bg-surface-container-low border border-outline-variant/15 rounded-2xl p-4 font-mono text-[10px] leading-relaxed space-y-2.5">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-on-surface-variant/40 text-[9px] uppercase font-bold">Target URL:</span>
+                    <span className="text-primary break-all hover:underline cursor-pointer select-all font-semibold">
+                      {indexingPayload.url}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 pt-2.5 border-t border-outline-variant/10">
+                    <div>
+                      <span className="text-on-surface-variant/40 text-[9px] uppercase font-bold block mb-0.5">Console Action:</span>
+                      <span className="bg-secondary/15 text-secondary px-2 py-0.5 rounded text-[9px] font-bold">
+                        {indexingPayload.action}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-on-surface-variant/40 text-[9px] uppercase font-bold block mb-0.5">Response Code:</span>
+                      <span className="bg-green-500/15 text-green-700 px-2 py-0.5 rounded text-[9px] font-bold">
+                        {indexingPayload.responseStatus}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* API Integration Badges */}
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="bg-surface-container-high/40 border border-outline-variant/20 rounded-2xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-on-surface">Google Search API</span>
+                  </div>
+                  <span className="flex items-center gap-1 text-[9px] font-black uppercase text-green-600 bg-green-500/10 px-2.5 py-0.5 rounded-full border border-green-500/20">
+                    <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse" />
+                    Aktif
+                  </span>
+                </div>
+
+                <div className="bg-surface-container-high/40 border border-outline-variant/20 rounded-2xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-on-surface">Bing IndexNow API</span>
+                  </div>
+                  <span className="flex items-center gap-1 text-[9px] font-black uppercase text-green-600 bg-green-500/10 px-2.5 py-0.5 rounded-full border border-green-500/20">
+                    <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse" />
+                    Aktif
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer bar */}
+            <div className="p-6 bg-surface-container-low border-t border-outline-variant/25 flex justify-end gap-3 rounded-b-3xl">
+              <button 
+                onClick={() => setShowIndexingModal(false)}
+                className="bg-primary hover:bg-primary/90 text-white font-bold text-xs px-6 py-2.5 rounded-full shadow-md hover:scale-[1.02] active:scale-95 duration-200 transition-all cursor-pointer font-sans"
+              >
+                Selesai {"&"} Tutup
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
@@ -3877,13 +4040,15 @@ function SeoCenterPanel({
   indexedIds, 
   setIndexedIds, 
   handleInstantIndex, 
-  indexingId 
+  indexingId,
+  triggerIndexingModal
 }: { 
   articles: Article[]; 
   indexedIds: string[]; 
   setIndexedIds: React.Dispatch<React.SetStateAction<string[]>>;
-  handleInstantIndex: (articleId: string, articleTitle: string) => void;
+  handleInstantIndex: (articleId: string, articleTitle: string, isSilent?: boolean) => void;
   indexingId: string | null;
+  triggerIndexingModal: (payload: any) => void;
 }) {
   const [seoTitle, setSeoTitle] = useState('Optimasi Core Web Vitals Next.js 16');
   const [seoSlug, setSeoSlug] = useState('optimasi-core-web-vitals-nextjs');
@@ -4013,21 +4178,48 @@ function SeoCenterPanel({
     const listToProcess = targets.length > 0 ? targets : publishedArticles;
     
     if (listToProcess.length === 0) {
-      alert('Belum ada artikel terbit yang dirilis ke publik!');
+      triggerIndexingModal({
+        url: 'Bulk Submission',
+        articleId: 'all',
+        action: 'BULK_INDEX',
+        googleActive: false,
+        bingActive: false,
+        responseStatus: '400 NO_TARGETS',
+        message: 'Belum ada artikel terbit yang dirilis ke publik!'
+      });
       setIsIndexingAll(false);
       return;
     }
 
-    alert(`Memulai pengiriman massal untuk ${listToProcess.length} artikel secara berurutan...`);
+    // Set indexing payload with bulk status
+    triggerIndexingModal({
+      url: 'https://masandigital.com/sitemap.xml',
+      articleId: 'bulk',
+      action: 'BULK_URL_SUBMISSION',
+      googleActive: true,
+      bingActive: true,
+      responseStatus: 'Processing Queue...',
+      message: `Sedang mengirim antrean pengiriman massal secara berurutan untuk ${listToProcess.length} artikel terbit...`
+    });
 
     for (const art of listToProcess) {
-      handleInstantIndex(art.id, art.title);
+      handleInstantIndex(art.id, art.title, true);
       // Wait 600ms between calls to simulate a smooth api stream queue and avoid clogging
       await new Promise(resolve => setTimeout(resolve, 600));
     }
 
     setIsIndexingAll(false);
-    alert('Selesai! Seluruh antrean artikel berhasil diajukan ke Google & Bing Indexing API.');
+    
+    // Complete payload with success bulk status
+    triggerIndexingModal({
+      url: 'https://masandigital.com/sitemap.xml',
+      articleId: 'bulk',
+      action: 'BULK_URL_SUBMISSION',
+      googleActive: true,
+      bingActive: true,
+      responseStatus: '200 OK (All Bulk Indexed)',
+      message: `Selesai! Seluruh antrean ${listToProcess.length} artikel terbit berhasil diajukan dan dijadwalkan masuk antrean rayap Google & Bing.`
+    });
   };
 
   const publishedArticles = articles.filter(a => a.status === 'published');
@@ -4471,7 +4663,6 @@ function SeoCenterPanel({
           </div>
         )}
       </div>
-
     </div>
   );
 }

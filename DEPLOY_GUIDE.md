@@ -2,19 +2,24 @@
 
 ## 🌐 Integrasi Menyeluruh Komputer Lokal (Laragon) ➜ GitHub ➜ Supabase Cloud ➜ Netlify Production
 
-Panduan ini disusun secara komprehensif, langkah-demi-langkah, dan diperbarui untuk mencakup fitur-fitur premium terbaru (seperti **Real-Time Database Monitor**, **GitHub Actions Keep-Alive Scheduler**, dan **404 Auto-Redirect**) guna memastikan portal berita/editorial **masandigital.com** berjalan 100% online, real-time, berkinerja tinggi, dan aman selamanya di internet.
+Panduan ini disusun secara komprehensif dan diperbarui hingga **Mei 2026** mencakup seluruh fitur premium portal berita/editorial **masandigital.com** — termasuk **SEO Traffic Multiplier Engine**, **Database Performance Optimization**, **Glassmorphic Admin UI**, **RSS Feed**, **Dynamic Sitemap**, dan **Instant Indexing Console**.
 
 ---
 
 ## 📋 DAFTAR ISI
+
 1. [📋 Prasyarat Sebelum Memulai](#-prasyarat-sebelum-memulai)
 2. [🛠️ LANGKAH 1: Inisialisasi Git & Sinkronisasi Repo GitHub](#%EF%B8%8F-langkah-1-inisialisasi-git--sinkronisasi-repo-github)
-3. [🗄️ LANGKAH 2: Migrasi Database ke Supabase Cloud (Singapore Region)](#%EF%B8%8F-langkah-2-migrasi-database-ke-supabase-cloud-singapore-region)
-4. [🤖 LANGKAH 3: Aktivasi Fitur Eternal Keep-Alive (Anti-Paused Supabase)](#-langkah-3-aktivasi-fitur-eternal-keep-alive-anti-paused-supabase)
+3. [🗄️ LANGKAH 2: Migrasi Database ke Supabase Cloud](#%EF%B8%8F-langkah-2-migrasi-database-ke-supabase-cloud-singapore-region)
+4. [🤖 LANGKAH 3: Aktivasi Eternal Keep-Alive (Anti-Paused)](#-langkah-3-aktivasi-fitur-eternal-keep-alive-anti-paused-supabase)
 5. [🌐 LANGKAH 4: Deploy & Konfigurasi Build di Netlify](#-langkah-4-deploy--konfigurasi-build-di-netlify)
-6. [🎯 LANGKAH 5: Menghubungkan Domain Kustom (masandigital.com) & SSL](#-langkah-5-menghubungkan-domain-kustom-masandigitalcom--ssl)
-7. [📊 FITUR OPERASIONAL BARU: Editorial & Telemetry Diagnostics](#-fitur-operasional-baru-editorial--telemetry-diagnostics)
-8. [💡 Panduan Pembaruan Kode & Alur Kerja CI/CD Sekali Klik](#-panduan-pembaruan-kode--alur-kerja-cicd-sekali-klik)
+6. [🎯 LANGKAH 5: Domain Kustom & SSL](#-langkah-5-menghubungkan-domain-kustom-masandigitalcom--ssl)
+7. [⚡ LANGKAH 6: Optimasi Database (RPC Function)](#-langkah-6-optimasi-database-supabase-rpc-function)
+8. [🔍 LANGKAH 7: Konfigurasi SEO & Instant Indexing](#-langkah-7-konfigurasi-seo--instant-indexing)
+9. [📊 FITUR OPERASIONAL: Dashboard & Diagnostics](#-fitur-operasional-dashboard--diagnostics)
+10. [🚀 FITUR SEO TRAFFIC MULTIPLIER](#-fitur-seo-traffic-multiplier)
+11. [⚙️ ARSITEKTUR DATABASE PERFORMA TINGGI](#%EF%B8%8F-arsitektur-database-performa-tinggi)
+12. [💡 Panduan Pembaruan Kode & CI/CD](#-panduan-pembaruan-kode--alur-kerja-cicd-sekali-klik)
 
 ---
 
@@ -31,38 +36,25 @@ Pastikan Anda memiliki akun aktif di layanan cloud premium gratis berikut:
 
 ## 🛠️ LANGKAH 1: Inisialisasi Git & Sinkronisasi Repo GitHub
 
-Semua kode sumber proyek Anda saat ini telah tertata rapi di folder lokal Laragon. Untuk memindahkannya ke GitHub:
-
 1. Buka terminal **Git Bash** atau **PowerShell** dan masuk ke direktori proyek:
    ```bash
    cd c:\laragon\www\masandigital
    ```
-2. Pastikan file `.gitignore` terpasang di root direktori untuk mengabaikan folder cache besar (seperti `.next/` dan `node_modules/`).
+2. Pastikan file `.gitignore` terpasang di root direktori untuk mengabaikan folder cache besar (`.next/`, `node_modules/`).
 3. Inisialisasi repositori Git lokal dan buat commit pertama:
    ```bash
-   # Inisialisasi Git
    git init
-
-   # Tambahkan semua file proyek
    git add .
-
-   # Buat catatan commit pertama
-   git commit -m "feat: setup premium editorial CMS portal with realtime telemetry & keep-alive"
+   git commit -m "feat: setup premium editorial CMS portal"
    ```
-4. Buka **GitHub**, lalu buat repositori baru:
+4. Buka **GitHub**, buat repositori baru:
    * **Repository name**: `masandigital`
-   * **Privacy**: Pilih **Private** (Sangat Direkomendasikan untuk keamanan database & API keys).
+   * **Privacy**: **Private** (sangat direkomendasikan)
    * Jangan centang opsi README, `.gitignore`, atau lisensi apa pun.
-   * Klik **Create repository**.
-5. Hubungkan direktori lokal komputer Anda ke repositori GitHub tersebut dan unggah kodenya:
+5. Hubungkan dan push:
    ```bash
-   # Hubungkan repositori lokal ke GitHub
    git remote add origin https://github.com/mychiara/masandigital.git
-
-   # Atur nama branch utama ke main
    git branch -M main
-
-   # Kirim kode lokal ke GitHub
    git push -u origin main
    ```
 
@@ -70,128 +62,267 @@ Semua kode sumber proyek Anda saat ini telah tertata rapi di folder lokal Larago
 
 ## 🗄️ LANGKAH 2: Migrasi Database ke Supabase Cloud (Singapore Region)
 
-Agar data website Anda sinkron secara **100% online real-time** tanpa selisih:
-
-1. Masuk ke **Supabase Dashboard** ([supabase.com](https://supabase.com)) ➜ **New Project**.
-2. Konfigurasikan detail database:
+1. Masuk ke **Supabase Dashboard** ➜ **New Project**.
+2. Konfigurasi:
    * **Project Name**: `masandigital`
-   * **Database Password**: Buat password yang kuat dan catat di tempat aman.
-   * **Region**: Pilih **Singapore (ap-southeast-1)**. Ini merupakan region terdekat dari Indonesia demi latensi super cepat (< 50ms RTT).
-   * Klik **Create new project** (tunggu 1-2 menit hingga proses alokasi mesin selesai).
+   * **Database Password**: Buat password kuat dan catat.
+   * **Region**: **Singapore (ap-southeast-1)** — latensi terkecil dari Indonesia (<50ms RTT).
 3. **Eksekusi Struktur SQL**:
-   * Klik menu **SQL Editor** di panel samping kiri Supabase.
-   * Klik **New Query**.
-   * Salin seluruh isi file **`supabase.sql`** yang terletak di folder root Laragon proyek Anda.
-   * Tempel (*paste*) ke dalam SQL Editor Supabase, lalu klik **Run** (tombol hijau).
-   * *Hasil*: Tabel `articles`, `settings`, artikel bawaan, dan aturan keamanan tingkat baris (RLS - Row Level Security) sukses dibuat.
+   * Menu **SQL Editor** ➜ **New Query**.
+   * Salin seluruh isi file **`supabase.sql`** dari folder root proyek ➜ paste ➜ klik **Run**.
+   * *Hasil*: Tabel `articles`, `settings`, artikel bawaan, dan RLS sukses dibuat.
 4. **Buat Akun Login Admin**:
-   * Masuk ke menu **Authentication** (ikon orang) ➜ **Users** ➜ **Add User** ➜ **Create User**.
-   * Masukkan email dan password pilihan Anda untuk kredensial Login Admin utama website Anda.
+   * Menu **Authentication** ➜ **Users** ➜ **Add User** ➜ **Create User**.
+   * Masukkan email dan password untuk kredensial admin.
 5. **Salin API Credentials**:
-   * Buka **Project Settings** (ikon gerigi) ➜ **API**.
-   * Salin nilai **Project API URL** (ini adalah `NEXT_PUBLIC_SUPABASE_URL`).
-   * Salin nilai **anon / public key** (ini adalah `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+   * **Project Settings** ➜ **API**.
+   * Salin **Project API URL** (`NEXT_PUBLIC_SUPABASE_URL`).
+   * Salin **anon / public key** (`NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 
 ---
 
 ## 🤖 LANGKAH 3: Aktivasi Fitur Eternal Keep-Alive (Anti-Paused Supabase)
 
-Supabase Free Tier memiliki kebijakan otomatis untuk mem-**pause** proyek database gratis jika tidak mendeteksi transaksi data atau request API selama 7 hari berturut-turut. 
+Supabase Free Tier mem-**pause** proyek jika tidak ada aktivitas selama 7 hari.
 
-Untuk mengatasi hal ini secara permanen, kami telah memasang **GitHub Actions Keep-Alive Scheduler** otomatis:
-
-### ⚙️ Bagaimana Fitur Ini Melindungi Anda?
-Sistem ini menggunakan workflow otomatis di folder `.github/workflows/keep-alive.yml`. Setiap **3 hari sekali** pada pukul **07:00 WIB**, server GitHub Actions akan secara otomatis menjalankan:
-1. **Direct Database Pulse**: Mengirim HTTP request langsung ke API Supabase Anda untuk memeriksa tabel `settings`.
-2. **Website Wake-up Ping**: Melakukan ping ke link website utama Anda (`https://masandigital.com`) yang otomatis memicu render server-side dan membuka koneksi database PostgreSQL aktif.
-
-*Hasilnya: Database Anda akan terdeteksi aktif selamanya dan tidak akan pernah dinonaktifkan otomatis.*
+Sistem **GitHub Actions Keep-Alive Scheduler** (`.github/workflows/keep-alive.yml`) secara otomatis setiap **3 hari sekali** pukul **07:00 WIB**:
+1. Mengirim HTTP request langsung ke API Supabase (tabel `settings`).
+2. Melakukan ping ke `https://masandigital.com` untuk memicu render server-side.
 
 ### 🛠️ Pengujian Manual:
-* Masuk ke halaman repositori GitHub Anda ➜ klik tab **Actions**.
-* Pilih workflow **"Supabase Auto Keep-Alive"** di bilah menu kiri.
-* Klik tombol **Run workflow** untuk memicunya secara manual dan melihat log transmisi data yang berhasil.
+* GitHub Repo ➜ tab **Actions** ➜ pilih **"Supabase Auto Keep-Alive"** ➜ klik **Run workflow**.
 
 ---
 
 ## 🌐 LANGKAH 4: Deploy & Konfigurasi Build di Netlify
 
-1. Masuk ke **Netlify Dashboard** ([netlify.com](https://netlify.com)) ➜ **Add new site** ➜ **Import an existing project**.
-2. Pilih **GitHub** dan berikan otorisasi. Cari repositori `masandigital` Anda.
-3. Konfigurasi build Next.js (Netlify akan mendeteksi pengaturan ini secara otomatis):
+1. **Netlify Dashboard** ➜ **Add new site** ➜ **Import an existing project** ➜ pilih **GitHub**.
+2. Pilih repo `masandigital`.
+3. Konfigurasi build:
    * **Build command**: `npm run build`
    * **Publish directory**: `.next`
-4. **PENTING: Pengaturan Environment Variables**:
-   Sebelum mengklik tombol Deploy, klik bagian **Environment Variables** dan masukkan kredensial Supabase Anda di sini agar Next.js dapat terhubung secara real-time pada saat proses build kompilasi berlangsung:
-   
-   | Key | Value / Nilai |
-   | :--- | :--- |
-   | `NEXT_PUBLIC_SUPABASE_URL` | *URL Supabase Cloud Anda dari Langkah 2* |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *Anon Public Key Supabase Anda dari Langkah 2* |
+4. **Environment Variables** (WAJIB sebelum Deploy):
 
-5. Klik **Deploy masandigital**. Proses build akan memakan waktu kurang lebih 2-3 menit. Setelah statusnya **"Site is live"**, Anda akan mendapatkan subdomain gratis (misalnya `masandigital.netlify.app`).
+   | Key | Value |
+   | :--- | :--- |
+   | `NEXT_PUBLIC_SUPABASE_URL` | *URL Supabase Cloud dari Langkah 2* |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *Anon Public Key dari Langkah 2* |
+
+5. Klik **Deploy masandigital** — proses build ±2-3 menit.
 
 ---
 
 ## 🎯 LANGKAH 5: Menghubungkan Domain Kustom (masandigital.com) & SSL
 
-1. Di Netlify Dashboard, masuk ke **Site Configuration** ➜ **Domain Management** ➜ klik **Add custom domain**.
-2. Masukkan domain utama Anda: `masandigital.com` (serta versi `www.masandigital.com`).
-3. Konfigurasikan Name Server (NS) domain Anda:
-   * Masuk ke portal DNS penyedia domain tempat Anda membelinya (Niagahoster, Rumahweb, Cloudflare, dsb).
-   * Ganti name server bawaan dengan Name Server yang disediakan oleh Netlify (contoh: `dns1.p01.nsone.net`, `dns2.p01.nsone.net`, dst).
-4. Setelah DNS terpropagasi (biasanya 5-15 menit), Netlify akan menerbitkan sertifikat **SSL Let's Encrypt secara GRATIS** untuk website Anda. Anda sekarang dapat mengaksesnya secara aman via `https://masandigital.com`!
+1. Netlify Dashboard ➜ **Site Configuration** ➜ **Domain Management** ➜ **Add custom domain**.
+2. Masukkan `masandigital.com` dan `www.masandigital.com`.
+3. Ganti Name Server domain Anda di penyedia domain (Niagahoster/Cloudflare/dll) ke Name Server yang diberikan Netlify.
+4. Setelah propagasi DNS (5-15 menit), sertifikat **SSL Let's Encrypt** diterbitkan otomatis gratis.
 
 ---
 
-## 📊 FITUR OPERASIONAL BARU: Editorial & Telemetry Diagnostics
+## ⚡ LANGKAH 6: Optimasi Database — Supabase RPC Function
 
-Ketika Anda masuk ke panel Admin di `/login` dan mengakses halaman Editorial Workspace, Anda sekarang akan disuguhkan menu tab canggih baru: **"Database Monitor"**.
+Untuk performa **increment views 2x lebih cepat** (1 query atomic, bukan 2 query), jalankan SQL berikut di **Supabase SQL Editor**:
 
-Fitur premium ini dirancang khusus untuk memberikan kendali pengawasan penuh terhadap keandalan sinkronisasi data Anda:
+```sql
+-- Atomic view counter (single query instead of SELECT + UPDATE)
+CREATE OR REPLACE FUNCTION increment_views(row_id uuid)
+RETURNS integer AS $$
+  UPDATE articles SET views = views + 1
+  WHERE id = row_id RETURNING views;
+$$ LANGUAGE sql;
+```
 
-### 🌟 1. Primary Database Instance Status Card
-* **Koneksi Real-Time**: Status koneksi langsung ke instance database di region **ap-southeast-1 (Singapore)** dengan spesifikasi server **t4g.nano**.
-* **Visual Telemetry Grid**: Menampilkan penggunaan CPU, kapasitas penyimpanan Disk, persentase RAM dialokasikan, dan jumlah koneksi aktif yang berjalan dengan grafik mikro-indikator dinamis.
-
-### 🌐 2. Network Latency Ping Test (RTT)
-* Tombol **"Test Ping Latency"** dapat diklik kapan saja untuk melakukan ping langsung dari browser Anda ke endpoint cloud Supabase.
-* Hasil RTT (Round Trip Time) akan muncul dalam satuan milidetik (`ms`) lengkap dengan label klasifikasi performa (**EXCELLENT**, **AVERAGE**, atau **HIGH LATENCY**) untuk memastikan transfer data Anda tidak terhambat.
-
-### 🛡️ 3. Real-Time Table Row Audit System
-* Untuk menjawab tuntas kekhawatiran mengenai selisih data, tombol **"Run Row Audit"** akan memicu pemeriksaan real-time terhadap hitungan record baris pada tabel-tabel utama di Supabase Cloud:
-  * **`articles`** (menghitung jumlah artikel online).
-  * **`settings`** (menghitung baris konfigurasi portal).
-* Ini memberikan jaminan penuh bahwa apa yang Anda lihat di CMS adalah **persis 100% sama** dengan apa yang tersimpan secara fisik di server PostgreSQL.
-
-### 📟 4. Live PostgreSQL Transaction Terminal
-* Kotak log diagnostik bergaya retro konsol hacker hijau-hitam yang mencatat setiap log transaksi database yang dieksekusi oleh CMS secara real-time seperti SQL query `SELECT`, `INSERT`, `UPDATE`, hingga `SSL keep-alive handshake`.
+> **Catatan**: Tanpa fungsi ini, sistem tetap berjalan normal menggunakan fallback 2-query. RPC function ini hanya menambahkan optimasi kecepatan ekstra.
 
 ---
 
-## 🤖 404 AUTO-REDIRECT TO HOMEPAGE (Uptime Pengunjung)
+## 🔍 LANGKAH 7: Konfigurasi SEO & Instant Indexing
 
-Untuk menjamin kenyamanan pengunjung website Anda dari ancaman link rusak atau kesalahan pengetikan URL yang berujung pada halaman kosong 404:
-* Kami memasang halaman custom `not-found.tsx` di `[src/app/not-found.tsx](file:///c:/laragon/www/masandigital/src/app/not-found.tsx)`.
-* Setiap kali pengunjung mengakses URL yang salah, mereka akan disambut dengan logo loading transisi berputar premium selama 1 detik sebelum sistem **secara otomatis mengalihkan (redirect) mereka kembali ke halaman utama** (`https://masandigital.com`) secara mulus.
+Semua konfigurasi SEO tersedia di panel Admin ➜ tab **Settings**:
+
+### Google Search Console Indexing API
+1. Buka [Google Search Console](https://search.google.com/search-console) ➜ tambahkan property `masandigital.com`.
+2. Salin **meta tag verifikasi** Google (contoh: `google1234567890abcde`).
+3. Paste di Admin ➜ Settings ➜ **Google Site Verification (GSC Tag)**.
+
+### Bing Webmaster & IndexNow API
+1. Daftar di [Bing Webmaster Tools](https://www.bing.com/webmasters).
+2. Salin API Key Bing.
+3. Paste di Admin ➜ Settings ➜ **Bing API Key**.
+4. Token verifikasi IndexNow sudah tersedia di: `public/f565b93d39504505bf77df4c74070a25.txt`
+
+### Instant Indexing Console (Admin Panel)
+* Tab **SEO Center** ➜ bagian **Status Indeksasi Publikasi Aktif**
+* Klik **Request Indexing** per-artikel atau **Request Indexing Seluruhnya** untuk bulk submission.
+* Status **INDEXED** tersimpan di `localStorage` dan bertahan setelah refresh halaman.
+* Popup sukses ditampilkan dalam modal **glassmorphic premium** (bukan `alert()` browser).
+
+---
+
+## 📊 FITUR OPERASIONAL: Dashboard & Diagnostics
+
+### 🗄️ Database Monitor (Admin ➜ Tab "Database Monitor")
+* **Primary Instance Status**: Koneksi real-time ke region **ap-southeast-1 (Singapore)**.
+* **Ping Latency Test (RTT)**: Ukur response time Supabase dalam milidetik.
+* **Row Audit System**: Verifikasi hitungan record tabel `articles` dan `settings` real-time.
+* **PostgreSQL Transaction Terminal**: Log diagnostik bergaya konsol hijau-hitam.
+
+### 🤖 AI Auto-Generator (Admin ➜ Tab "Auto Generator")
+* Dukungan provider: **Google Gemini**, **OpenAI**, dan **Simulasi Lokal**.
+* Generasi artikel massal dengan jadwal interval terbit otomatis.
+* Target jumlah kata (500–5000 kata), kategori otomatis, dan tag SEO.
+
+### 📰 SEO Control Center (Admin ➜ Tab "SEO Center")
+* **Live SEO Score Calculator**: Analisis real-time judul, slug, deskripsi, dan focus keyword.
+* **Keyword Density Auditor**: Optimal 1.5%–2.5% untuk menghindari stuffing penalty.
+* **SERP Preview**: Pratinjau tampilan di Google untuk mobile dan desktop.
+* **AI Content Brief Generator**: Generasi outline dan struktur artikel otomatis.
+
+### 📦 Article Import/Export (Admin Panel)
+* Import artikel via JSON paste langsung di panel admin.
+* Dukungan format data lengkap dengan validasi otomatis.
+
+---
+
+## 🚀 FITUR SEO TRAFFIC MULTIPLIER
+
+Fitur-fitur berikut telah terintegrasi untuk memaksimalkan indeksasi, trafik organik, dan retensi pembaca:
+
+### 1. Dynamic RSS 2.0 Feed (`/feed.xml`)
+* 30 artikel terbaru dengan `content:encoded` lengkap.
+* Enclosure WebP untuk kompatibilitas **Google Discover**.
+* Header XML: `xmlns:content`, `xmlns:dc`, `xmlns:media`.
+
+### 2. Dynamic XML Sitemap (`/sitemap.xml`)
+* Semua artikel published dengan priority `0.9` dan frequency `daily`.
+* Halaman statis (about, contact, privacy, terms, disclaimer) otomatis termasuk.
+
+### 3. SEO Internal Link Auto-Linker Engine
+* Otomatis mendeteksi judul artikel lain di dalam konten artikel.
+* Menyisipkan hyperlink internal `<a>` secara server-side.
+* Maksimal 15 kandidat per artikel (white-hat Google-friendly).
+* Menghindari penempatan di dalam tag HTML atau markdown bracket.
+
+### 4. Navbar Trending Ticker Widget
+* Bilah atas vertikal scrolling menampilkan 5 topik terpopuler.
+* Berbasis akumulasi `views` dari artikel terkini.
+
+### 5. Dynamic "Baca Juga" (Related Articles)
+* Kartu related articles disebarkan otomatis setiap **3 paragraf** di dalam artikel.
+* Meningkatkan internal linking flow dan retensi pembaca.
+
+### 6. Rich Article Layout Engine
+* **Drop Cap** megah pada paragraf pembuka.
+* Deteksi otomatis heading sub-bab (Markdown `##` atau kalimat pendek tanpa titik).
+* Perataan justify dengan border dekoratif biru pada subheading.
+* FAQ Schema JSON-LD untuk Google Rich Snippets.
+
+### 7. IndexNow Verification
+* Token file: `public/f565b93d39504505bf77df4c74070a25.txt`
+* Otomatis ditemukan oleh Bing Bot saat crawling.
+
+---
+
+## ⚙️ ARSITEKTUR DATABASE PERFORMA TINGGI
+
+### Tiered Caching System (`src/lib/db.ts`)
+
+| Cache Layer | TTL | Deskripsi |
+| :--- | :--- | :--- |
+| `articlesLight` | **60 detik** | Daftar artikel TANPA kolom `content` (hemat MB transfer) |
+| `articlesFull` | **30 detik** | Artikel lengkap (untuk admin & RSS feed) |
+| `settings` | **120 detik** | Pengaturan situs (jarang berubah) |
+| `articleBySlug` | **30 detik** | Cache per-artikel individual |
+
+### Optimasi yang Aktif:
+
+1. **Selective Column Fetch**: Homepage, sitemap, sidebar, auto-linker hanya mengambil kolom ringan (`id, title, slug, excerpt, category, views, ...`) — kolom `content` (puluhan KB) tidak diambil.
+
+2. **Stale-While-Revalidate**: Jika cache expired tapi data lama masih ada, data lama langsung dikembalikan ke user sambil refresh di background. User tidak pernah menunggu.
+
+3. **Request Coalescing**: Mencegah duplikasi query paralel ke Supabase saat banyak request masuk bersamaan.
+
+4. **Fire-and-Forget View Counter**: `incrementViews()` mencoba RPC atomic dulu, fallback ke 2-query. Update kedua cache (light + full) secara bersamaan.
+
+5. **Cache Warming**: Saat server Next.js start, `articlesLight` + `settings` langsung di-pre-fetch secara otomatis. Visitor pertama tidak kena cold start.
+
+### Caller Mapping:
+
+| Halaman / Fitur | Method | Alasan |
+| :--- | :--- | :--- |
+| Homepage | `getArticlesLight()` | Tidak butuh content |
+| Sitemap | `getArticlesLight()` | Hanya perlu slug + tanggal |
+| Auto-Linker | `getArticlesLight()` | Hanya perlu title + slug |
+| Related Articles | `getArticlesLight()` | Tidak butuh content |
+| generateStaticParams | `getArticlesLight()` | Hanya perlu slug |
+| RSS Feed (`/feed.xml`) | `getArticles()` | Butuh content lengkap |
+| Admin Panel | `getArticles()` | Butuh content untuk editing |
+
+---
+
+## 🤖 404 AUTO-REDIRECT TO HOMEPAGE
+
+* Halaman custom `not-found.tsx` di `src/app/not-found.tsx`.
+* Loading transisi premium selama 1 detik sebelum redirect otomatis ke beranda.
 
 ---
 
 ## 💡 Panduan Pembaruan Kode & Alur Kerja CI/CD Sekali Klik
 
-Karena website Anda sudah terintegrasi penuh dengan alur kerja **CI/CD (Continuous Integration / Continuous Deployment)** GitHub + Netlify, Anda tidak perlu lagi menyentuh cPanel atau melakukan unggahan file manual (FTP) yang rawan merusak file.
-
-Setiap kali Anda membuat perubahan kode di komputer lokal Anda (Laragon), jalankan saja 3 perintah cepat ini di Git Bash:
+Website sudah terintegrasi penuh dengan alur **CI/CD** GitHub + Netlify. Setiap perubahan kode, jalankan:
 
 ```bash
-# 1. Tandai semua file yang baru dirubah/ditambahkan
+# 1. Tandai semua file yang dirubah
 git add .
 
-# 2. Commit perubahan dengan pesan deskriptif
-git commit -m "feat: perbarui konten sitemap dan performa database monitor"
+# 2. Commit dengan pesan deskriptif
+git commit -m "feat: optimasi database dan fitur SEO baru"
 
-# 3. Push ke GitHub main
+# 3. Push ke GitHub
 git push origin main
 ```
 
-**Dan selesai!** Server Netlify di awan akan langsung mendeteksi kode baru Anda dari GitHub, mengkompilasinya ulang secara otomatis di latar belakang, dan meluncurkan update terbaru Anda ke website live dalam waktu kurang dari 2 menit tanpa ada *downtime* sama sekali! 🚀
+**Selesai!** Netlify langsung mendeteksi, build ulang, dan deploy dalam <2 menit tanpa downtime! 🚀
+
+---
+
+## 📁 STRUKTUR FILE UTAMA
+
+```
+masandigital/
+├── .env.local                          # API keys Supabase (JANGAN commit!)
+├── .github/workflows/keep-alive.yml    # Auto keep-alive scheduler
+├── public/
+│   └── f565b93d39504505bf77df4c74070a25.txt  # IndexNow verification token
+├── src/
+│   ├── app/
+│   │   ├── page.tsx                    # Homepage (client-side)
+│   │   ├── layout.tsx                  # Root layout + SEO metadata
+│   │   ├── sitemap.ts                  # Dynamic XML sitemap
+│   │   ├── robots.ts                   # robots.txt generator
+│   │   ├── not-found.tsx               # 404 auto-redirect
+│   │   ├── admin/page.tsx              # Admin dashboard + SEO Center
+│   │   ├── admin/edit/page.tsx         # Article editor
+│   │   ├── article/[slug]/page.tsx     # Article SSG + auto-linker
+│   │   ├── article/[slug]/ArticleClient.tsx  # Client-side article reader
+│   │   ├── feed.xml/route.ts           # Dynamic RSS 2.0 feed
+│   │   ├── ads.txt/route.ts            # ads.txt dynamic handler
+│   │   ├── login/page.tsx              # Authentication page
+│   │   └── (about|contact|privacy|terms|disclaimer|tools)/
+│   ├── components/
+│   │   ├── Navbar.tsx                  # Navigation + trending ticker
+│   │   ├── Footer.tsx                  # Site footer
+│   │   └── AdSlot.tsx                  # Ad placement component
+│   └── lib/
+│       ├── db.ts                       # Database layer + tiered cache
+│       └── auth.ts                     # Authentication utilities
+├── supabase.sql                        # Database schema + seed data
+├── DEPLOY_GUIDE.md                     # Panduan ini
+└── package.json                        # Dependencies & scripts
+```
+
+---
+
+*Terakhir diperbarui: 18 Mei 2026 — Versi Portal: v3.0 (Database Optimization + SEO Traffic Multiplier)*

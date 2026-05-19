@@ -14,7 +14,7 @@ interface PageProps {
 // Generate Static Params for SSG pre-rendering at build time
 export async function generateStaticParams() {
   try {
-    const articles = await db.getArticles();
+    const articles = await db.getArticlesLight();
     const published = articles.filter(a => a.status === 'published');
     return published.map((article) => ({
       slug: article.slug,
@@ -89,7 +89,7 @@ export default async function Page({ params }: PageProps) {
   // Dynamic SEO Internal Link Auto-Linker Engine (Steps 1-5 & SEO Traffic Multiplier)
   let linkedContent = article.content || '';
   try {
-    const allArticles = await db.getArticles();
+    const allArticles = await db.getArticlesLight();
     const otherArticles = allArticles.filter(a => a.id !== article.id && a.status === 'published');
     
     // Sort other articles by title length in descending order to match longer phrases first

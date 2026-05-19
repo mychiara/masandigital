@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   
   try {
     // Fetch all active articles for dynamic sitemap inclusion
-    const articles = await db.getArticles();
+    const articles = await db.getArticlesLight();
     const publishedArticles = articles.filter(a => a.status === 'published');
     
     articleEntries = publishedArticles.map((article) => ({

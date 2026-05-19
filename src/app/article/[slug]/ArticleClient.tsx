@@ -186,7 +186,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
   useEffect(() => {
     async function loadAllArticles() {
       try {
-        const data = await db.getArticles();
+        const data = await db.getArticlesLight();
         const published = data.filter(
           a => a.status === 'published' && a.id !== initialArticle.id
         );
@@ -204,7 +204,7 @@ export default function ArticleClient({ initialArticle }: ArticleClientProps) {
 
   // Fetch related articles for the first article's "Baca Juga" slot
   useEffect(() => {
-    db.getArticles(initialArticle.category).then(data => {
+    db.getArticlesLight(initialArticle.category).then(data => {
       const published = data.filter(
         a => a.status === 'published' && a.id !== initialArticle.id
       );
