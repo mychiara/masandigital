@@ -6,13 +6,32 @@
  * secara instan dengan menembus batasan verifikasi email.
  */
 
-const SUPABASE_URL = "https://uqwttsqkkkjfkcgrfaed.supabase.co";
+const fs = require('fs');
+const path = require('path');
+
+// Ambil URL Supabase daripada .env.local secara dinamik
+let SUPABASE_URL = "";
+const envLocalPath = path.join(__dirname, "..", ".env.local");
+
+if (fs.existsSync(envLocalPath)) {
+  const envContent = fs.readFileSync(envLocalPath, "utf8");
+  const match = envContent.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/);
+  if (match && match[1]) {
+    SUPABASE_URL = match[1].trim();
+  }
+}
+
+// Fallback sekiranya tiada dalam .env.local
+if (!SUPABASE_URL) {
+  SUPABASE_URL = "https://fcwnjateagykjsqhurio.supabase.co"; // URL aktif dari .env.local
+}
 
 // Ambil Service Role Key dari environment variable
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 async function main() {
   console.log("=== SUPABASE ADMIN PROVISIONER (SERVICE ROLE BYPASS) ===");
+  console.log(`Supabase URL: ${SUPABASE_URL}`);
   
   if (!SERVICE_ROLE_KEY) {
     console.error("✗ ERROR: SUPABASE_SERVICE_ROLE_KEY tidak ditemukan!");

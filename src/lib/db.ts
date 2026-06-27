@@ -155,7 +155,7 @@ export const db = {
               ? (err as any).message || JSON.stringify(err)
               : String(err);
             console.error('Supabase getArticles query failed:', errorMessage);
-            throw new Error(`Failed to fetch articles from Supabase: ${errorMessage}`);
+            return []; // Graceful fallback to prevent crash
           }
         })();
       }
@@ -223,7 +223,8 @@ export const db = {
             return (data as Article[]) || [];
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            throw new Error(`Failed to fetch articles light: ${msg}`);
+            console.error('Supabase getArticlesLight query failed:', msg);
+            return []; // Graceful fallback to prevent crash
           }
         })();
       }
@@ -269,7 +270,7 @@ export const db = {
         ? (err as any).message || JSON.stringify(err)
         : String(err);
       console.error(`Supabase getArticleBySlug (${slug}) query failed:`, errorMessage);
-      throw new Error(`Failed to fetch article by slug: ${errorMessage}`);
+      return null; // Graceful fallback to prevent crash
     }
 
     cache.articleBySlug[slug] = { data: article, timestamp: nowTime };
@@ -479,7 +480,7 @@ export const db = {
             ? (err as any).message || JSON.stringify(err)
             : String(err);
           console.error('Supabase getSettings query failed:', errorMessage);
-          throw new Error(`Failed to fetch settings from Supabase: ${errorMessage}`);
+          return null; // Graceful fallback to DEFAULT_SETTINGS
         }
       })();
     }
